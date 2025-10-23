@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoRide Mobile App (V7)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons for aesthetic icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; 
+            min-height: 100vh;
+        }
+        
+        .font-handwritten {
+            font-family: 'Caveat', cursive;
+        }
+
+        .mobile-frame {
+            width: 100%;
+            min-height: 100vh;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            padding: 0 1.5rem;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 70px; 
+            /* Added for better readability on wide screens */
+            width: 100%;
+            max-w: 3xl; /* 768px */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .bottom-nav {
+            height: 60px;
+            box-shadow: 0 -5px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Map Placeholder Style - Simulates a real map view */
+        .map-bg {
+            background-image: url('https://placehold.co/400x600/b3c7d6/4f6d83?text=Map+View');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .login-bg {
+            background-image: url('https://placehold.co/400x800/e0f2f1/14b8a6?text=Electric+Car+Interior'); 
+            background-size: cover;
+            background-position: center;
+            opacity: 0.1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* CSS for Animated Route Line */
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 1000;
+            }
+        }
+        .animate-dash-move {
+            animation: dash 30s linear infinite;
+            stroke-dashoffset: 0; 
+        }
+
+        /* CSS for Emergency Siren Wiggle */
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+        .animate-wiggle {
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+        
+        /* CSS for Decorative Symbol Float Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        /* CSS for SOS Button Radial Glow */
+        .sos-button {
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #f87171;
+        }
+        .sos-button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 0, 0, 0.3) 0%, rgba(255, 0, 0, 0) 70%);
+            animation: radialPulse 2s infinite ease-out;
+            z-index: 1;
+            pointer-events: none;
+        }
+        @keyframes radialPulse {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(0.5); opacity: 0.8; }
+        }
+        
+        /* --- CSS for Animated Toast Notification (Location Confirmation) --- */
+        @keyframes slideInDown {
+            from { transform: translate(-50%, -100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes fadeOutUp {
+            from { transform: translate(-50%, 0); opacity: 1; }
+            to { transform: translate(-50%, -100px); opacity: 0; }
+        }
+        .toast-enter {
+            animation: slideInDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+        .toast-exit {
+            animation: fadeOutUp 0.5s ease-in 2.5s forwards;
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+
+        /* --- CSS for Feedback Star Animation --- */
+        @keyframes starPop {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .feedback-star {
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+        .feedback-star.selected {
+            color: #f59e0b; /* amber-500 */
+            animation: starPop 0.4s ease-out;
+        }
+        
+        /* --- NEW: CSS for Wheelchair Animation --- */
+        #animation-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .wheelchair-icon-animation {
+            position: absolute;
+            color: #0d9488; /* teal-600 */
+            transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app" class="mobile-frame">
+        <!-- Top Status Bar (Simulated) -->
+        <div class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 bg-white border-b border-gray-100">
+            <span>9:41</span>
+            <div class="flex space-x-1">
+                <i data-lucide="signal-medium" class="w-4 h-4 text-emerald-600"></i>
+                <i data-lucide="wifi" class="w-4 h-4"></i>
+                <i data-lucide="battery-medium" class="w-4 h-4"></i>
+            </div>
+        </div>
+        
+        <!-- Toast Notification Container (For creative location confirmation) -->
+        <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
+            <!-- Toasts will be injected here -->
+        </div>
+
+        <!-- Main Content Wrapper -->
+        <div id="main-content" class="content-area">
+            <!-- Screen content will be injected here -->
+        </div>
+
+        <!-- Fixed Bottom Navigation Bar -->
+        <div id="bottom-nav" class="fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center bottom-nav z-10">
+            <!-- Navigation items will be managed by JS -->
+        </div>
+
+        <!-- Custom Modal for Alerts and Email Verification -->
+        <div id="app-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+            <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-100">
+                <h3 id="modal-title" class="text-xl font-semibold mb-3 text-emerald-600"></h3>
+                <p id="modal-message" class="text-gray-700 mb-6 whitespace-pre-line"></p>
+                <div id="modal-content">
+                     <button onclick="closeModal()" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-medium hover:bg-emerald-700 transition">
+                        Got it
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Spinner for Geolocation/AI -->
+        <div id="loading-spinner" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div class="flex flex-col items-center bg-white p-6 rounded-xl shadow-2xl">
+                <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p id="loading-text" class="mt-3 text-gray-700 font-medium">Processing request...</p>
+            </div>
+        </div>
+        
+        <!-- Manual Contact Modal -->
+        <div id="contact-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+            <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-100">
+                <h3 class="text-xl font-semibold mb-3 text-emerald-600">Add Manual Contact</h3>
+                <p class="text-gray-700 mb-4">Enter a phone number to be alerted during an SOS emergency.</p>
+                <input type="tel" id="manual-contact-input" placeholder="e.g. +91 99887 76655" class="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 mb-4" />
+                <div class="flex justify-end space-x-2">
+                    <button onclick="document.getElementById('contact-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-xl font-medium hover:bg-gray-100 transition">
+                        Cancel
+                    </button>
+                    <button onclick="saveManualContact()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-emerald-700 transition">
+                        Save Contact
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ride Details Modal (NEW) -->
+        <div id="ride-details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-95 border-2 border-white">
+                <div id="ride-details-content" class="text-center">
+                    <!-- Content injected by JS -->
+                </div>
+                <button onclick="closeRideDetailsModal()" class="w-full mt-6 bg-emerald-600 text-white py-2 rounded-xl font-semibold hover:bg-emerald-700 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Feedback Modal (NEW) -->
+        <div id="feedback-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-95">
+                <h3 class="text-2xl font-bold text-center text-emerald-600 mb-2">Ride Complete!</h3>
+                <p class="text-center text-gray-600 mb-4">How was your experience with ${appState.rideDetails.driverName}?</p>
+                
+                <div id="feedback-stars" class="flex justify-center text-gray-300 text-4xl mb-4 space-x-2">
+                    <!-- Stars injected by JS -->
+                </div>
+
+                <textarea id="feedback-suggestion" class="w-full h-24 p-3 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 mb-4" placeholder="Have any suggestions? (Optional)"></textarea>
+
+                <button onclick="submitFeedback()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold hover:bg-emerald-700 transition">
+                    Submit Feedback
+                </button>
+            </div>
+        </div>
+        
+        <!-- NEW: Animation Container -->
+        <div id="animation-container"></div>
+
+    </div>
+
+    <script>
+        // --- Gemini API Configuration ---
+        const GEMINI_API_KEY = ""; // Canvas will provide this
+        const GEMINI_MODEL_FLASH = "gemini-2.5-flash-preview-09-2025";
+        const MAX_RETRIES = 3;
+
+        // --- Configuration & Static Data ---
+        // DEPRECATED: Removed hardcoded city lists to simulate a dynamic, India-wide search.
+        // const INDIAN_CITIES = [ ... ]; 
+        // const ASSOCIATED_LOCATIONS = [ ... ];
+        // const MASTER_LOCATION_LIST = [ ... ];
+
+        // This list is now only used for showing initial popular locations when search is empty.
+        const POPULAR_LOCATIONS = [
+            'Mumbai', 'Delhi', 'Bengaluru', 'Kolkata', 'Chennai', 'Pune', 
+            'Hyderabad', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kolhapur', 'Warananagar', 'Kodoli'
+        ];
+
+        const RIDE_OPTIONS = [
+            { id: 'E-Rikshaw', icon: 'Moped', label: 'E-Rikshaw', baseFare: 50 },
+            { id: 'E-Bike', icon: 'Bike', label: 'E-Bike', baseFare: 40 },
+            { id: 'E-Car', icon: 'Car', label: 'E-Car', baseFare: 100 },
+        ];
+        const PAYMENT_OPTIONS = [
+            { id: 'UPI', icon: 'Wallet', label: 'UPI Payment' },
+            { id: 'Card', icon: 'CreditCard', label: 'Debit/Credit Card' },
+            { id: 'Cash', icon: 'IndianRupee', label: 'Cash' },
+        ];
+        const SCREENS = {
+            LOGIN: 'login',
+            REGISTER: 'register',
+            VERIFICATION: 'verification',
+            FORGOT_PASSWORD: 'forgotPassword', // New Screen
+            HOME: 'home',
+            LOCATION_SELECT: 'locationSelect',
+            CONFIRM_BOOKING: 'confirmBooking',
+            LIVE_TRACKING: 'liveTracking',
+            EMERGENCY: 'emergency',
+            PROFILE: 'profile',
+            AI_SUPPORT: 'aiSupport'
+        };
+
+        // --- State Management ---
+        const appState = {
+            screen: SCREENS.LOGIN,
+            currency: '₹',
+            isLoggedIn: false,
+            activeRideInProgress: false, // NEW: Lock UI during ride
+            authCode: null,
+            registrationEmail: null,
+            user: {
+                name: 'First Time User',
+                email: 'user@example.com',
+                avatar: 'https://placehold.co/80x80/a8dadc/1d3557?text=SC',
+                emergencyContact: {
+                    name: 'Family',
+                    phone: '+91 98765 43210'
+                },
+                manualEmergencyContact: ''
+            },
+            rideDetails: {
+                pickupCity: 'Current Location',
+                dropoffCity: 'Select Destination',
+                passengers: 2,
+                rideType: 'E-Car', // Default selection
+                paymentMode: 'UPI',
+                estimatedTime: '15 min',
+                fare: 100,
+                needsWheelchair: false, // New state for accessibility
+                driverName: 'Alex Green',
+                driverRating: 4.9,
+                vehicle: 'Tata Nexon EV',
+                licensePlate: 'DL 01 AA 1234',
+                driverEtaToPickup: '2 min', // New state for driver ETA
+                ecoSummary: null, 
+                // NEW: Ride Timer State
+                rideTimerSeconds: null,
+                timerInterval: null,
+            },
+            // Used for location selection
+            locationSettingTarget: null,
+            // New state for AI Chat History
+            chatHistory: [{ role: 'ai', text: `Hello! I'm EcoBot, powered by Gemini. I can check live traffic, route options, and help with your account. Try asking: 'What is the traffic from Kolhapur to Pune?'` }],
+            // New state for AI Visualization data
+            aiVisualization: {
+                show: false,
+                trafficLevel: 'normal', // 'heavy', 'moderate', 'normal'
+                durationIncrease: '0 min'
+            },
+            // Ride History now starts empty and is built dynamically
+            rideHistory: []
+        };
+
+        // --- DOM Elements ---
+        const $mainContent = document.getElementById('main-content');
+        const $bottomNav = document.getElementById('bottom-nav');
+        const $appModal = document.getElementById('app-modal');
+        const $modalTitle = document.getElementById('modal-title');
+        const $modalMessage = document.getElementById('modal-message');
+        const $modalContent = document.getElementById('modal-content');
+        const $loadingSpinner = document.getElementById('loading-spinner');
+        const $loadingText = document.getElementById('loading-text');
+        const $manualContactInput = document.getElementById('manual-contact-input');
+        const $toastContainer = document.getElementById('toast-container'); 
+
+        // --- Gemini API Fetch Utility (with exponential backoff) ---
+
+        /** * Fetches content from the Gemini API with optional grounding and retry logic. */
+        async function fetchGemini(userQuery, systemPrompt, useGrounding = false, retries = 0) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_FLASH}:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
+                tools: useGrounding ? [{ google_search: {} }] : undefined,
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 429 && retries < MAX_RETRIES) {
+                    const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                    await new Promise(res => setTimeout(res, delay));
+                    return fetchGemini(userQuery, systemPrompt, useGrounding, retries + 1);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    let sources = [];
+                    const groundingMetadata = candidate.groundingMetadata;
+                    
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+                    }
+                    return { text, sources };
+                } else {
+                    throw new Error("Invalid response structure from Gemini API. Check console for details.");
+                }
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                return { text: "Sorry, EcoBot is currently offline. Please check your connection or try again later.", sources: [] };
+            }
+        }
+
+        // --- NEW: Audio Utility for SOS Beep ---
+        let audioCtx;
+        function playSosSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // High-pitched beep
+                gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.8);
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser or failed to init.", e);
+            }
+        }
+
+
+        // --- Utility Functions ---
+
+        /** Displays a custom modal instead of alert() */
+        function showModal(title, message, customContent = '') {
+            $modalTitle.textContent = title;
+            $modalMessage.innerHTML = message.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800">$1</strong>');
+            $modalContent.innerHTML = customContent || `<button onclick="closeModal()" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-medium hover:bg-emerald-700 transition">Got it</button>`;
+            $appModal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        /** Closes the custom modal */
+        function closeModal() {
+            $appModal.classList.add('hidden');
+        }
+
+        /** Shows or hides the loading spinner */
+        function toggleLoading(show, message = 'Processing request...') {
+            $loadingText.textContent = message;
+            $loadingSpinner.classList.toggle('hidden', !show);
+        }
+        
+        /** Shows an animated toast notification */
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `p-3 my-2 rounded-xl text-white font-semibold flex items-center shadow-lg toast-enter pointer-events-auto`;
+            toast.classList.add('toast-exit');
+
+            let iconHtml = '';
+            let bgColor = 'bg-emerald-600';
+            
+            if (type === 'location') {
+                iconHtml = `<i data-lucide="bell" class="w-6 h-6 mr-3 text-yellow-300 animate-wiggle"></i>`;
+                bgColor = 'bg-blue-600';
+            } else if (type === 'success') {
+                iconHtml = `<i data-lucide="check-circle" class="w-5 h-5 mr-2 animate-pop"></i>`;
+                bgColor = 'bg-emerald-600';
+            } else if (type === 'error') {
+                iconHtml = `<i data-lucide="x-circle" class="w-5 h-5 mr-2 animate-pop"></i>`;
+                bgColor = 'bg-red-600';
+            }
+
+            toast.classList.add(bgColor);
+            toast.innerHTML = `${iconHtml}<span>${message}</span>`;
+
+            $toastContainer.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+
+        /** Changes the application state and re-renders the UI */
+        function navigate(screenName, params = {}) {
+            Object.assign(appState, params);
+            appState.screen = screenName;
+            render();
+            $mainContent.scrollTop = 0;
+            
+            // Clear visualization when leaving the AI screen
+            if (screenName !== SCREENS.AI_SUPPORT) {
+                 appState.aiVisualization.show = false;
+            }
+        }
+
+        /** Generates an icon HTML string */
+        function icon(name, className = 'w-6 h-6') {
+            return `<i data-lucide="${name}" class="${className}"></i>`;
+        }
+
+        /** Generates the custom EcoRide logo (Car + Sprout) */
+        function renderLogo(size = 'w-8 h-8', textColor = 'text-emerald-600') {
+            // Adjust bolt size based on main icon size to look proportional
+            let boltSize = 'w-4 h-4'; // Default for w-8
+            if (size.includes('12')) {
+                boltSize = 'w-6 h-6'; // For login screen
+            } else if (size.includes('7')) {
+                 boltSize = 'w-3 h-3'; // For header
+            }
+
+            return `
+                <div class="flex items-center justify-center gap-0.5 ${textColor}">
+                    <i data-lucide="leaf" class="${size}"></i>
+                    <i data-lucide="bolt" class="${boltSize} text-yellow-400 fill-yellow-400 transform -rotate-12"></i>
+                    <i data-lucide="car" class="${size}"></i>
+                </div>
+            `;
+        }
+        
+        // --- Authentication Logic (Simulated) ---
+
+        function handleRegistration(email, password, confirmPassword) {
+            if (!email || !password || !confirmPassword) {
+                return showModal('Error', 'All fields are required for registration.');
+            }
+            if (password !== confirmPassword) {
+                return showModal('Error', 'Password and Confirm Password must match.');
+            }
+            if (!/\S+@\S+\.\S+/.test(email)) {
+                return showModal('Error', 'Please enter a valid email address.');
+            }
+
+            // SIMULATION: Generate code and store state
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            appState.authCode = code;
+            appState.registrationEmail = email;
+
+            const modalContent = `
+                <input type="number" id="auth-code-input" placeholder="Enter 6-digit code" class="w-full text-center text-xl font-bold tracking-widest pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 mb-6" />
+                <button onclick="verifyCode(document.getElementById('auth-code-input').value)" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-medium hover:bg-emerald-700 transition">Verify</button>
+            `;
+            
+            showModal(
+                'Email Verification Sent!',
+                `A 6-digit authentication code has been sent to: **${email}**.\n\nCode for testing (SIMULATION): <span class="font-extrabold text-lg text-red-500">${code}</span>`,
+                modalContent
+            );
+        }
+
+        function verifyCode(inputCode) {
+            closeModal();
+            if (inputCode === appState.authCode) {
+                appState.isLoggedIn = true;
+                appState.user.email = appState.registrationEmail;
+                showToast('Welcome to EcoRide!', 'success');
+                navigate(SCREENS.HOME);
+            } else {
+                showModal('Error', 'The code you entered is incorrect. Please try again.');
+                navigate(SCREENS.LOGIN); 
+            }
+        }
+
+        function handleLogin() {
+            appState.isLoggedIn = true;
+            navigate(SCREENS.HOME);
+        }
+        
+        // --- NEW: Forgot Password Logic ---
+        function handlePasswordReset() {
+            const emailInput = document.getElementById('reset-email').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (!newPassword || !confirmPassword || !emailInput) {
+                return showModal('Error', 'All fields (Email, New Password, Confirm Password) are required.');
+            }
+            if (newPassword !== confirmPassword) {
+                return showModal('Error', 'New Password and Confirm Password must match.');
+            }
+            if (!/\S+@\S+\.\S+/.test(emailInput)) {
+                return showModal('Error', 'Please enter a valid email address.');
+            }
+            
+            // SIMULATION: Generate code and store state temporarily
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            appState.authCode = code;
+            
+            const modalContent = `
+                <input type="number" id="reset-code-input" placeholder="Enter 6-digit code" class="w-full text-center text-xl font-bold tracking-widest pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 mb-6" />
+                <button onclick="verifyPasswordResetCode(document.getElementById('reset-code-input').value, '${newPassword}')" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-medium hover:bg-emerald-700 transition">Verify & Reset</button>
+            `;
+            
+            showModal(
+                'Password Reset Code Sent!',
+                `A 6-digit authentication code has been sent to: **${emailInput}**.\n\nCode for testing (SIMULATION): <span class="font-extrabold text-lg text-red-500">${code}</span>`,
+                modalContent
+            );
+        }
+        
+        function verifyPasswordResetCode(inputCode, newPassword) {
+            closeModal();
+            if (inputCode === appState.authCode) {
+                // In a real app, this is where you'd update the password in the database
+                showToast('Password Reset Successful!', 'success');
+                navigate(SCREENS.LOGIN); 
+            } else {
+                showModal('Error', 'The code you entered is incorrect. Please try again or re-enter your new password.');
+                navigate(SCREENS.FORGOT_PASSWORD);
+            }
+        }
+
+        // --- Core Application Logic with Wheelchair Feature ---
+        
+        function setRideType(typeId) {
+            appState.rideDetails.rideType = typeId;
+            navigate(SCREENS.HOME); // Re-render to update selection
+        }
+
+        // NEW: Separate function for toggling wheelchair and triggering animation
+        function toggleWheelchair() {
+            appState.rideDetails.needsWheelchair = !appState.rideDetails.needsWheelchair;
+            if (appState.rideDetails.needsWheelchair) {
+                triggerWheelchairAnimation();
+            }
+            navigate(SCREENS.HOME); // Re-render to show toggle state
+        }
+
+        function setPaymentMode(modeId) {
+            appState.rideDetails.paymentMode = modeId;
+            navigate(SCREENS.CONFIRM_BOOKING);
+        }
+
+        // NEW: Uses showToast for creative location confirmation
+        function setLocation(city) {
+            let message = '';
+            if (appState.locationSettingTarget === 'pickupCity') {
+                appState.rideDetails.pickupCity = city;
+                message = `<span class='font-bold text-yellow-300'>${city}</span>`;
+            } else if (appState.locationSettingTarget === 'dropoffCity') {
+                appState.rideDetails.dropoffCity = city;
+                message = `Destination set to <span class='font-bold text-yellow-300'>${city}</span>`;
+            }
+            appState.locationSettingTarget = null;
+            showToast(message, 'success'); // Changed type for clarity
+            navigate(SCREENS.HOME);
+        }
+
+        // NEW: Wheelchair Animation Function
+        function triggerWheelchairAnimation() {
+            const container = document.getElementById('animation-container');
+            if (!container) return;
+            
+            const vehicleEl = document.getElementById(`ride-option-${appState.rideDetails.rideType}`);
+            const wheelchairToggleEl = document.getElementById('wheelchair-toggle');
+            if (!vehicleEl || !wheelchairToggleEl) return;
+
+            const vehicleRect = vehicleEl.getBoundingClientRect();
+            const toggleRect = wheelchairToggleEl.getBoundingClientRect();
+            const frameRect = document.getElementById('app').getBoundingClientRect();
+            
+            const startX = toggleRect.left - frameRect.left + (toggleRect.width / 2);
+            const startY = toggleRect.top - frameRect.top + (toggleRect.height / 2);
+            
+            const endX = vehicleRect.left - frameRect.left + (vehicleRect.width / 2);
+            const endY = vehicleRect.top - frameRect.top + (vehicleRect.height / 2);
+
+            const wheelchair = document.createElement('div');
+            wheelchair.innerHTML = icon('wheelchair', 'w-8 h-8');
+            wheelchair.className = 'wheelchair-icon-animation';
+            wheelchair.style.left = `${startX - 16}px`;
+            wheelchair.style.top = `${startY - 16}px`;
+
+            container.appendChild(wheelchair);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                wheelchair.style.transform = `translate(${endX - startX}px, ${endY - startY}px) scale(0.5)`;
+            });
+
+            setTimeout(() => {
+                wheelchair.remove();
+            }, 1200);
+        }
+        
+        // --- Gemini Feature 1: Grounded AI Traffic Info & Visualization ---
+        async function getTrafficInfo(query) {
+            toggleLoading(true, 'Consulting EcoBot for real-time traffic & routing...');
+            
+            const systemPrompt = `You are EcoBot, a helpful, enthusiastic, and highly informative AI assistant for a ride-sharing app in India. Use real-time information to provide a concise, single-paragraph summary of the current traffic situation and suggest the most eco-friendly ride option based on traffic/weather. Always use metric units (kilometers, minutes, kg) and Indian context.`;
+            const userQuery = `Current traffic, suggested eco-ride option, and ETA from ${appState.rideDetails.pickupCity} to ${appState.rideDetails.dropoffCity}. User query: ${query}`;
+            
+            const result = await fetchGemini(userQuery, systemPrompt, true); 
+            
+            // Analyze the text to simulate a traffic level for visualization
+            let trafficLevel = 'normal';
+            let durationIncrease = '0 min';
+
+            if (result.text.toLowerCase().includes('heavy traffic') || result.text.toLowerCase().includes('major delays')) {
+                trafficLevel = 'heavy';
+                durationIncrease = `${Math.floor(Math.random() * 10) + 5} min`;
+            } else if (result.text.toLowerCase().includes('moderate traffic') || result.text.toLowerCase().includes('some delays')) {
+                trafficLevel = 'moderate';
+                durationIncrease = `${Math.floor(Math.random() * 5) + 2} min`;
+            }
+            
+            appState.aiVisualization.show = true;
+            appState.aiVisualization.trafficLevel = trafficLevel;
+            appState.aiVisualization.durationIncrease = durationIncrease;
+
+            toggleLoading(false);
+            return result;
+        }
+
+        function handleAiChatInput() {
+            const input = document.getElementById('ai-chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // 1. Add user message
+            appState.chatHistory.push({ role: 'user', text: message });
+            input.value = ''; 
+            navigate(SCREENS.AI_SUPPORT); // Re-render to show user message
+
+            // 2. Get AI Response
+            getTrafficInfo(message).then(response => {
+                const aiMsg = {
+                    role: 'ai',
+                    text: response.text,
+                    sources: response.sources
+                };
+                appState.chatHistory.push(aiMsg);
+                navigate(SCREENS.AI_SUPPORT); // Re-render to show AI response & visualization
+            });
+        }
+        
+        // --- Gemini Feature 2: Eco-Impact Analysis ---
+        async function generateEcoSummary() {
+            toggleLoading(true, 'Calculating Eco-Impact & Generating Summary...');
+
+            const { rideType, fare, needsWheelchair, pickupCity, dropoffCity } = appState.rideDetails;
+            
+            const distanceKm = (Math.random() * 10 + 5).toFixed(1);
+            const carbonSaved = (distanceKm * 0.15 * (rideType === 'E-Car' ? 0.9 : 1.2)).toFixed(2); 
+            const durationMinutes = (Math.random() * 20 + 10).toFixed(0);
+            const accessibilityNote = needsWheelchair ? ' wheelchair-accessible vehicle' : ' standard vehicle';
+
+            const systemPrompt = `You are the Eco-Impact Analyst for EcoRide. Write a single, highly enthusiastic, short paragraph (under 80 words) summarizing the environmental success of this trip. Highlight the 'Eco-Ride Type' (${rideType} in a ${accessibilityNote}), the distance, the time, and the estimated CO2 saved compared to a traditional cab. Use metric units (km, minutes, kg).`;
+            const userQuery = `Write a summary for a completed trip. Ride Type: ${rideType}, Origin: ${pickupCity}, Destination: ${dropoffCity}, Distance: ${distanceKm} km, Duration: ${durationMinutes} minutes, Estimated CO2 saved: ${carbonSaved} kg.`;
+
+            const result = await fetchGemini(userQuery, systemPrompt, false); 
+            
+            appState.rideDetails.ecoSummary = result.text;
+            
+            // --- NEW: Add completed ride to history ---
+            const completedRide = {
+                ...appState.rideDetails,
+                id: Date.now(),
+                date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
+                ecoSaved: `${carbonSaved}kg CO2 saved`,
+                ecoSummary: result.text,
+                feedback: { rating: 0, suggestion: '' } // Initialize feedback
+            };
+            appState.rideHistory.unshift(completedRide); // Add to beginning of array
+            
+            toggleLoading(false);
+            // NEW: Show feedback modal instead of navigating directly
+            showFeedbackModal();
+        }
+
+        // --- Screen Rendering Functions ---
+
+        function renderHeader(title, showBack = false) {
+            const backButton = showBack
+                ? `<button onclick="goBack()" class="p-2 text-gray-700">
+                      ${icon('chevron-left', 'w-6 h-6')}
+                   </button>`
+                : '<div class="w-6 h-6"></div>';
+
+            return `
+                <div class="flex items-center justify-between h-14 sticky top-0 bg-white z-20 border-b border-gray-100 -mx-6 px-6">
+                    ${backButton}
+                    <h1 class="text-lg font-semibold text-gray-800 flex items-center">
+                        ${title === 'EcoRide' ? renderLogo('w-7 h-7', 'text-emerald-600') + '<span class="ml-1">EcoRide</span>' : title}
+                    </h1>
+                    <div class="w-6 h-6"></div>
+                </div>
+            `;
+        }
+        
+        function renderLoginScreen() {
+             $mainContent.innerHTML = `
+                <div class="login-bg"></div>
+
+                <div class="relative flex flex-col items-center justify-center min-h-[calc(80vh-60px)] z-10 pt-10">
+                    <div class="text-center mb-8 w-full relative">
+                        <!-- Decorative Symbols -->
+                        <div class="absolute top-0 left-1/4 text-emerald-400 opacity-70 animate-float" style="animation-delay: 0s;">
+                            <i data-lucide="leaf" class="w-6 h-6 -rotate-45"></i>
+                        </div>
+                        <div class="absolute top-8 right-1/4 text-emerald-300 opacity-60 animate-float" style="animation-delay: 1s;">
+                            <i data-lucide="sparkle" class="w-5 h-5"></i>
+                        </div>
+                         <div class="absolute -top-4 right-1/3 text-emerald-200 opacity-80 animate-float" style="animation-delay: 2s;">
+                            <i data-lucide="leaf" class="w-8 h-8 rotate-12"></i>
+                        </div>
+
+                        <div class="flex items-center justify-center text-4xl font-bold text-emerald-600 mb-4">
+                            ${renderLogo('w-12 h-12', 'text-emerald-600')}
+                            <span class="ml-3">EcoRide</span>
+                        </div>
+                        <h2 class="text-3xl font-extrabold text-gray-800">Welcome Back!</h2>
+                    </div>
+
+                    <div class="w-full space-y-5">
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="mail" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="email" placeholder="Enter your email" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="lock" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="password" placeholder="Enter your password" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                    </div>
+
+                    <button onclick="handleLogin()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg mt-8 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform hover:scale-[1.01] active:scale-[0.99]">
+                        Log In
+                    </button>
+
+                    <button onclick="navigate('${SCREENS.FORGOT_PASSWORD}')" class="text-sm text-emerald-600 font-medium mt-3 hover:underline">
+                        Forgot Password?
+                    </button>
+                    
+                    <div class="my-6 text-gray-400">or</div>
+
+                    <button onclick="navigate('${SCREENS.REGISTER}')" class="w-full border-2 border-emerald-600 text-emerald-600 py-3 rounded-xl font-semibold text-lg flex items-center justify-center transition hover:bg-emerald-50 shadow-md">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        Register Now
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderRegistrationScreen() {
+             $mainContent.innerHTML = `
+                ${renderHeader('Sign Up', true)}
+                <div class="relative flex flex-col items-center justify-start z-10 pt-4">
+                    <h2 class="text-2xl font-extrabold text-gray-800 mb-6 w-full">Create Your EcoRide Account</h2>
+                    
+                    <div class="w-full space-y-5">
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="mail" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="email" id="reg-email" placeholder="Email Address (Required for Auth)" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="lock" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="password" id="reg-password" placeholder="Password" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="key" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="password" id="reg-confirm-password" placeholder="Confirm Password" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                    </div>
+
+                    <button onclick="handleRegistration(
+                        document.getElementById('reg-email').value,
+                        document.getElementById('reg-password').value,
+                        document.getElementById('reg-confirm-password').value
+                    )" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg mt-8 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform hover:scale-[1.01] active:scale-[0.99]">
+                        Register & Send Code
+                    </button>
+
+                    <button onclick="navigate('${SCREENS.LOGIN}')" class="text-sm text-gray-500 font-medium mt-6 hover:underline">
+                        Already have an account? Log In
+                    </button>
+                </div>
+            `;
+        }
+        
+        // NEW: Forgot Password Screen
+        function renderForgotPasswordScreen() {
+             $mainContent.innerHTML = `
+                ${renderHeader('Forgot Password', true)}
+                <div class="relative flex flex-col items-center justify-start z-10 pt-4">
+                    <h2 class="text-2xl font-extrabold text-gray-800 mb-6 w-full">Set a New Password</h2>
+                    
+                    <div class="w-full space-y-5">
+                         <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="mail" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="email" id="reset-email" placeholder="Your Registered Email" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="lock" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="password" id="new-password" placeholder="New Password" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                        <div class="relative bg-white rounded-xl shadow-md">
+                            <i data-lucide="key" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="password" id="confirm-password" placeholder="Confirm New Password" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500" />
+                        </div>
+                    </div>
+
+                    <button onclick="handlePasswordReset()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg mt-8 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform hover:scale-[1.01] active:scale-[0.99]">
+                        Send Reset Code to Email
+                    </button>
+
+                    <button onclick="navigate('${SCREENS.LOGIN}')" class="text-sm text-gray-500 font-medium mt-6 hover:underline">
+                        Cancel and Go Back to Login
+                    </button>
+                </div>
+            `;
+        }
+        
+        // NEW: Active Ride Screen to prevent new bookings
+        function renderActiveRideScreen() {
+            $mainContent.innerHTML = `
+                 ${renderHeader('EcoRide', false)}
+                 <div class="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center">
+                    <i data-lucide="car" class="w-20 h-20 text-emerald-500 mb-4 animate-pulse"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Your Ride is in Progress!</h2>
+                    <p class="text-gray-600 mt-2">You cannot book a new ride until your current one is complete.</p>
+                    <button onclick="navigate('${SCREENS.LIVE_TRACKING}')" class="mt-8 bg-emerald-600 text-white py-3 px-6 rounded-xl font-semibold text-lg shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition">
+                        Go to Live Tracking
+                    </button>
+                 </div>
+            `;
+        }
+
+        function renderHomeScreen() {
+            if (appState.activeRideInProgress) {
+                renderActiveRideScreen();
+                return;
+            }
+            
+            const { pickupCity, dropoffCity, needsWheelchair } = appState.rideDetails;
+            const wheelchairSelected = needsWheelchair;
+
+            $mainContent.innerHTML = `
+                ${renderHeader('EcoRide', false)}
+                <div class="mt-4 space-y-5">
+                    <!-- Pickup and Destination Fields -->
+                    <h3 class="text-xl font-bold text-gray-800">Where to?</h3>
+                    <div class="bg-white p-4 rounded-2xl card-shadow border border-gray-100 space-y-4">
+                        
+                        <!-- Pickup Location -->
+                        <div class="flex items-center cursor-pointer" onclick="navigate('${SCREENS.LOCATION_SELECT}', { locationSettingTarget: 'pickupCity' })">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-emerald-600 mr-3"></i>
+                            <div class="flex-grow">
+                                <p class="text-xs text-gray-500">Pickup Location</p>
+                                <p class="text-base font-semibold text-gray-800">${pickupCity}</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                        
+                        <hr class="border-gray-100">
+
+                        <!-- Destination Location -->
+                        <div class="flex items-center cursor-pointer" onclick="navigate('${SCREENS.LOCATION_SELECT}', { locationSettingTarget: 'dropoffCity' })">
+                            <i data-lucide="flag" class="w-5 h-5 text-red-500 mr-3"></i>
+                            <div class="flex-grow">
+                                <p class="text-xs text-gray-500">Destination</p>
+                                <p class="text-base font-semibold text-gray-800">${dropoffCity}</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                     <!-- NEW: Accessibility Options -->
+                    <div id="wheelchair-toggle" onclick="toggleWheelchair()" class="cursor-pointer bg-white p-4 rounded-2xl card-shadow border ${wheelchairSelected ? 'border-teal-500 ring-2 ring-teal-200' : 'border-gray-100'} transition flex items-center justify-between">
+                         <div class="flex items-center">
+                            <i data-lucide="wheelchair" class="w-8 h-8 ${wheelchairSelected ? 'text-teal-600' : 'text-gray-500'} mr-4"></i>
+                            <div>
+                                <p class="font-handwritten text-2xl ${wheelchairSelected ? 'text-teal-700' : 'text-gray-700'}">Accessibility</p>
+                                <p class="text-xs text-gray-500">Need a wheelchair-friendly ride?</p>
+                            </div>
+                         </div>
+                         <div class="w-12 h-7 flex items-center rounded-full p-1 transition duration-300 ease-in-out ${wheelchairSelected ? 'bg-teal-500' : 'bg-gray-300'}">
+                            <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition duration-300 ease-in-out ${wheelchairSelected ? 'translate-x-5' : ''}"></div>
+                        </div>
+                    </div>
+
+
+                    <!-- Ride Options Grid -->
+                    <h3 class="text-xl font-semibold text-gray-800 pt-2">Choose your Ride</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        ${RIDE_OPTIONS.map(opt => renderRideOption(opt.icon, opt.label, opt.id)).join('')}
+                    </div>
+
+                    <!-- Main Booking Button (Only if both set) -->
+                    ${(pickupCity !== 'Current Location' && dropoffCity !== 'Select Destination') ? 
+                        `<button onclick="navigate('${SCREENS.CONFIRM_BOOKING}')" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-emerald-300 hover:bg-emerald-700 transition transform hover:scale-[1.01] active:scale-[0.99]">
+                            Request ${appState.rideDetails.rideType}
+                        </button>` 
+                        : `<button class="w-full bg-gray-300 text-gray-600 py-4 rounded-2xl font-bold text-lg cursor-not-allowed" disabled>
+                            Select Locations to Book
+                        </button>`
+                    }
+                </div>
+            `;
+            lucide.createIcons();
+        }
+        
+        function renderRideOption(iconName, title, typeId) {
+            return `
+                <div id="ride-option-${typeId}" onclick="setRideType('${typeId}')" class="flex flex-col items-center bg-white p-4 rounded-2xl card-shadow border ${appState.rideDetails.rideType === typeId ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-100'} transition hover:border-emerald-400 cursor-pointer">
+                    <div class="p-2 bg-emerald-100 rounded-full mb-2">
+                        <i data-lucide="${iconName}" class="w-6 h-6 text-emerald-600"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-800 text-center">${title}</h4>
+                </div>
+            `;
+        }
+
+        function filterCities(event) {
+            const query = event.target.value.toLowerCase().trim();
+            const list = document.getElementById('city-list');
+            list.innerHTML = ''; 
+
+            let results = [];
+
+            if (query === '') {
+                // Show popular locations if search is empty
+                results = POPULAR_LOCATIONS;
+            } else {
+                // Simulate a dynamic API fetch for "all cities and villages"
+                // We dynamically generate results based on the user's query.
+                const capitalizedQuery = query.charAt(0).toUpperCase() + query.slice(1);
+                
+                results = [
+                    capitalizedQuery, // The city/village itself
+                    `${capitalizedQuery} - Main Bazaar`,
+                    `${capitalizedQuery} - Railway Station`,
+                    `${capitalizedQuery} - Bus Stand`,
+                    `Nearby ${capitalizedQuery} Village 1`, // Simulating nearby village
+                    `${capitalizedQuery} - Tech Park`, // Simulating sub-location
+                ];
+                
+                // Add specific examples if user searches for them
+                if (query.startsWith('kolha')) {
+                    results.push('Kolhapur - Shivaji University', 'Kolhapur - Kagal');
+                } else if (query.startsWith('kodo')) {
+                    results.push('Kodoli - Peth Vadgaon', 'Kodoli - Sarud Village');
+                } else if (query.startsWith('pune')) {
+                    results.push('Pune - Hinjewadi IT Park', 'Pune - Kothrud');
+                }
+            }
+            
+            if (results.length === 0) { // Should not happen with this logic, but good practice
+                list.innerHTML = '<p class="p-4 text-center text-gray-500">No locations found matching your search.</p>';
+                return;
+            }
+
+            results.forEach(loc => {
+                const isVillage = loc.toLowerCase().includes('village') || loc.includes(' - ');
+                const item = document.createElement('div');
+                item.className = 'py-3 px-4 border-b border-gray-100 text-gray-800 font-medium hover:bg-emerald-50 cursor-pointer flex justify-between items-center';
+                item.innerHTML = `
+                    <span>${loc}</span>
+                    ${isVillage ? '<span class="text-xs text-emerald-600 font-semibold">Area/Village</span>' : ''}
+                `;
+                item.onclick = () => {
+                    setLocation(loc);
+                };
+                list.appendChild(item);
+            });
+            lucide.createIcons(); 
+        }
+
+        function renderLocationSelectionScreen() {
+            const target = appState.locationSettingTarget === 'pickupCity' ? 'Pickup Location' : 'Destination';
+
+            $mainContent.innerHTML = `
+                ${renderHeader(`Select ${target}`, true)}
+                <div class="pt-4 space-y-4">
+                    <!-- Search Input -->
+                    <div class="relative bg-white p-3 rounded-2xl card-shadow border border-gray-100">
+                        <i data-lucide="search" class="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="city-search-input" onkeyup="filterCities(event)" placeholder="Search for a city, town, or village in India..." class="w-full pl-10 pr-4 text-gray-700 focus:outline-none placeholder-gray-500">
+                    </div>
+                    
+                    <!-- City List -->
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Available Locations</h3>
+                    <div id="city-list" class="bg-white rounded-2xl card-shadow divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                        <!-- Cities will be rendered here via JS filterCities() -->
+                    </div>
+                    
+                    <button onclick="setLocation('Current Location')" class="w-full border border-dashed border-emerald-500 text-emerald-600 py-3 rounded-xl font-semibold mt-4 hover:bg-emerald-50">
+                        <i data-lucide="locate" class="w-5 h-5 mr-2 inline-block"></i>
+                        Set Current Location as Pickup
+                    </button>
+                </div>
+            `;
+            // Initial render of locations
+            filterCities({ target: { value: '' } });
+            lucide.createIcons();
+        }
+
+        function renderConfirmBookingScreen() {
+            const { pickupCity, dropoffCity, rideType, paymentMode, needsWheelchair } = appState.rideDetails;
+            
+            // Recalculate fare based on current state
+            const selectedOption = RIDE_OPTIONS.find(o => o.id === rideType);
+            let baseFare = selectedOption.baseFare + (Math.random() * 50); // Base random fare
+            const wheelchairCost = needsWheelchair ? 30 : 0;
+            appState.rideDetails.fare = baseFare + wheelchairCost;
+            appState.rideDetails.estimatedTime = `${Math.floor(Math.random() * 10) + 10} min`;
+            appState.rideDetails.driverEtaToPickup = `${Math.floor(Math.random() * 5) + 2} min`;
+            
+            const currency = appState.currency;
+            const { fare, estimatedTime } = appState.rideDetails;
+
+            $mainContent.innerHTML = `
+                ${renderHeader('Confirm Booking', true)}
+                <div class="py-4 space-y-6">
+                    <!-- Map View -->
+                    <div class="relative w-full h-48 rounded-2xl overflow-hidden card-shadow mb-6">
+                        <div class="w-full h-full map-bg bg-gray-200 flex items-center justify-center">
+                            <div class="absolute inset-0 bg-black bg-opacity-20 flex flex-col items-center justify-center p-4">
+                                <i data-lucide="map-pin" class="w-8 h-8 text-white mb-2"></i>
+                                <p class="text-sm font-semibold text-white text-center">Simulated Route: ${pickupCity} to ${dropoffCity}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Accessibility Detail -->
+                    ${needsWheelchair ? `
+                        <div class="bg-blue-50 p-3 rounded-xl flex items-center shadow-inner border border-blue-200">
+                            <i data-lucide="wheelchair" class="w-6 h-6 text-blue-600 mr-3"></i>
+                            <span class="text-sm font-semibold text-blue-800">Accessibility: Wheelchair-equipped ${rideType} requested. (+${currency}${wheelchairCost})</span>
+                        </div>
+                    ` : ''}
+
+
+                    <!-- Ride Options Card -->
+                    <h3 class="text-lg font-bold text-gray-800">Selected Ride Type</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        ${RIDE_OPTIONS.map(opt => `
+                            <button onclick="setRideType('${opt.id}'); navigate(SCREENS.CONFIRM_BOOKING);" class="flex flex-col items-center p-3 rounded-xl border ${rideType === opt.id ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' : 'border-gray-200 bg-white hover:bg-gray-50'} transition">
+                                <i data-lucide="${opt.icon}" class="w-6 h-6 ${rideType === opt.id ? 'text-emerald-600' : 'text-gray-500'} mb-1"></i>
+                                <span class="font-semibold text-sm text-gray-800">${opt.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <!-- Payment Mode Selection -->
+                    <h3 class="text-lg font-bold text-gray-800 pt-2">Payment Mode</h3>
+                    <div class="bg-white p-4 rounded-2xl card-shadow divide-y divide-gray-100">
+                        ${PAYMENT_OPTIONS.map(opt => `
+                            <div onclick="setPaymentMode('${opt.id}')" class="flex items-center justify-between py-2 cursor-pointer transition hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i data-lucide="${opt.icon}" class="w-5 h-5 ${paymentMode === opt.id ? 'text-emerald-600' : 'text-gray-500'} mr-3"></i>
+                                    <span class="text-sm font-medium text-gray-800">${opt.label}</span>
+                                </div>
+                                <div class="w-4 h-4 rounded-full border-2 ${paymentMode === opt.id ? 'border-emerald-600 bg-emerald-600' : 'border-gray-400 bg-white'} flex items-center justify-center">
+                                    ${paymentMode === opt.id ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Estimated Fare & Time -->
+                    <div class="flex justify-between items-center py-4 border-t border-b border-gray-100">
+                        <div class="flex flex-col items-start">
+                             <p class="text-xl font-extrabold text-emerald-600">${currency}${fare.toFixed(0)}</p>
+                             <p class="text-xs text-gray-500 font-medium">Estimated Final Fare</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-xl font-extrabold text-gray-800">${estimatedTime}</p>
+                             <p class="text-xs text-gray-500 font-medium">Estimated Arrival Time</p>
+                        </div>
+                    </div>
+
+                    <button onclick="startRide()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform active:scale-[0.99]">
+                        Confirm & Pay with ${paymentMode}
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderLiveTrackingScreen() {
+            const { driverName, vehicle, licensePlate, pickupCity, dropoffCity, ecoSummary, driverEtaToPickup } = appState.rideDetails;
+            const isRideComplete = ecoSummary !== null;
+            
+            // Format timer
+            const minutes = Math.floor(appState.rideDetails.rideTimerSeconds / 60);
+            const seconds = appState.rideDetails.rideTimerSeconds % 60;
+            const timerDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            $mainContent.innerHTML = `
+                ${renderHeader(isRideComplete ? 'Trip Complete' : 'Live Tracking', false)}
+                <div class="relative w-full h-[calc(100vh-220px)] -mx-6 mb-4">
+                    <!-- Simulated Map View -->
+                    <div class="map-bg w-full h-full">
+                        <div class="absolute top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg text-lg z-30 flex items-center">
+                            <i data-lucide="timer" class="w-5 h-5 mr-2"></i>
+                            <span id="ride-timer">${isRideComplete ? '00:00' : timerDisplay}</span>
+                        </div>
+                        
+                        <!-- Driver ETA to Pickup Location -->
+                        ${!isRideComplete ? `
+                            <div class="absolute top-16 left-4 bg-white px-3 py-1 rounded-lg shadow-md font-bold text-md text-gray-800 z-30 border-l-4 border-emerald-600">
+                                Arriving in <span class="text-emerald-600">${driverEtaToPickup}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="absolute inset-0 bg-black bg-opacity-10 pointer-events-none z-10"></div>
+                        
+                        <!-- Fixed Blue Route Line SVG Overlay -->
+                        <svg class="absolute inset-0 w-full h-full z-20" viewBox="0 0 400 600" preserveAspectRatio="none">
+                            <path d="M 50 550 L 100 450 L 250 350 L 300 150 L 350 50" 
+                                  stroke="#3b82f6" stroke-width="6" fill="none" 
+                                  stroke-linecap="round" stroke-linejoin="round"
+                                  stroke-dasharray="20, 10" class="animate-dash-move"/>
+                        </svg>
+
+                        <!-- Simulated current location/car -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
+                            <i data-lucide="${isRideComplete ? 'flag-checkered' : 'car-front'}" class="w-10 h-10 text-emerald-500 fill-emerald-500 drop-shadow-lg"></i>
+                        </div>
+                        
+                        <!-- Route Info -->
+                        <div class="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 p-3 rounded-t-xl text-center z-30">
+                            <p class="text-xs text-gray-500 font-medium">Route: ${pickupCity} to ${dropoffCity}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Driver Details Card / Trip Status -->
+                <div class="bg-white p-4 rounded-xl card-shadow flex flex-col space-y-3 mb-6">
+                    ${isRideComplete 
+                        ? `
+                            <h3 class="text-xl font-bold text-emerald-600 flex items-center">
+                                <i data-lucide="check-circle-2" class="w-6 h-6 mr-2"></i>
+                                Trip Success!
+                            </h3>
+                            <p class="text-sm text-gray-700 font-medium">Thank you for riding green with EcoRide. Your accessibility status was: <span class="font-bold">${appState.rideDetails.needsWheelchair ? 'Wheelchair Enabled' : 'Standard'}</span>.</p>
+                        `
+                        : `
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                     <img src="https://placehold.co/40x40/94b8e2/1f4c9c?text=D" class="w-10 h-10 rounded-full mr-3 border-2 border-emerald-400" alt="Driver Avatar">
+                                    <div>
+                                        <p class="font-semibold text-gray-800">${driverName} (${appState.rideDetails.rideType})</p>
+                                        <p class="text-xs text-gray-500">${vehicle} | ${licensePlate}</p>
+                                    </div>
+                                </div>
+                                <button onclick="showModal('Call Driver', 'Simulating call to driver ${driverName}.')" class="p-2 bg-emerald-100 rounded-full text-emerald-600 hover:bg-emerald-200 transition">
+                                    <i data-lucide="phone" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        `
+                    }
+                    
+                    <!-- ECO Summary Section -->
+                    <hr class="border-gray-100">
+                    ${ecoSummary 
+                        ? `
+                            <h4 class="font-bold text-md text-gray-800 flex items-center">
+                                <i data-lucide="leaf" class="w-4 h-4 mr-2 text-green-600"></i>
+                                Eco-Impact Analysis
+                            </h4>
+                            <div class="bg-emerald-50 p-3 rounded-lg text-sm text-gray-700 whitespace-pre-line card-shadow">
+                                ${ecoSummary}
+                            </div>
+                        `
+                        : `
+                            <button onclick="generateEcoSummary()" class="w-full bg-emerald-100 text-emerald-600 py-2 rounded-xl font-semibold text-md hover:bg-emerald-200 transition">
+                                Generate Eco-Impact Report (Simulate Trip End)
+                            </button>
+                        `
+                    }
+                    
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3 pb-8">
+                    ${!isRideComplete 
+                        ? `<button onclick="stopRideTimer(); appState.activeRideInProgress = false; showModal('Ride Canceled', 'Your ride has been safely canceled. You can book a new one from the home screen.'); navigate(SCREENS.HOME);" class="w-full border-2 border-red-500 text-red-500 py-3 rounded-xl font-semibold text-lg hover:bg-red-50 transition">
+                            Cancel Ride
+                        </button>
+                        <button onclick="navigate('${SCREENS.EMERGENCY}')" class="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-lg shadow-lg shadow-red-200 hover:bg-red-700 transition">
+                            <i data-lucide="bell-ring" class="w-5 h-5 mr-2 inline-block"></i>
+                            SOS
+                        </button>`
+                        : `<button onclick="appState.rideDetails.ecoSummary = null; navigate('${SCREENS.HOME}')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition">
+                            Book Another EcoRide
+                        </button>`
+                    }
+                </div>
+            `;
+            lucide.createIcons();
+        }
+        
+        function displayTrafficVisualization(trafficLevel, durationIncrease) {
+            if (!appState.aiVisualization.show) return '';
+
+            let color = '#10b981'; // green (normal)
+            let width = '6';
+            let text = `Traffic: Normal / Delay: ${durationIncrease}`;
+
+            if (trafficLevel === 'moderate') {
+                color = '#f59e0b'; // amber (moderate)
+                width = '10';
+                text = `Traffic: Moderate / Delay: +${durationIncrease}`;
+            } else if (trafficLevel === 'heavy') {
+                color = '#ef4444'; // red (heavy)
+                width = '14';
+                text = `Traffic: Heavy / Delay: +${durationIncrease}`;
+            }
+            
+            // Use a unique path for the AI Visualization map
+            return `
+                <div class="relative w-full h-48 rounded-2xl overflow-hidden card-shadow mb-4">
+                    <div class="w-full h-full map-bg bg-gray-200 flex items-center justify-center">
+                        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full font-bold shadow-xl text-sm text-gray-800 z-30 border-b-4 border-gray-200" style="border-color: ${color};">
+                            ${text}
+                        </div>
+                    </div>
+                    <svg class="absolute inset-0 w-full h-full z-20" viewBox="0 0 400 600" preserveAspectRatio="none">
+                        <!-- Simulated Fixed Route Line with Traffic Overlay (Blue Route D) -->
+                        <path d="M 50 550 L 100 450 L 250 350 L 300 150 L 350 50" 
+                              stroke="${color}" stroke-width="${width}" fill="none" 
+                              stroke-linecap="round" stroke-linejoin="round"
+                              stroke-dasharray="0" />
+                    </svg>
+                </div>
+            `;
+        }
+
+
+        function renderAiSupportScreen() {
+            $mainContent.innerHTML = `
+                ${renderHeader('AI Support Chat', true)}
+                <div class="flex flex-col h-[calc(100vh-140px)] justify-between -mx-6">
+                    
+                    <!-- AI Traffic Visualization Area -->
+                    <div class="p-4 pt-0">
+                        ${displayTrafficVisualization(appState.aiVisualization.trafficLevel, appState.aiVisualization.durationIncrease)}
+                    </div>
+                    
+                    <!-- Chat Area -->
+                    <div id="chat-area" class="flex-grow overflow-y-auto p-4 space-y-4">
+                        ${appState.chatHistory.map(msg => {
+                            if (msg.role === 'user') {
+                                return `
+                                    <div class="flex justify-end">
+                                        <div class="bg-emerald-500 text-white p-3 rounded-xl rounded-tr-none max-w-[80%] shadow-md">
+                                            <p class="text-sm">${msg.text}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                const sourcesHtml = msg.sources && msg.sources.length > 0 ? 
+                                    `<div class="mt-2 pt-2 border-t border-gray-200">
+                                       <p class="text-xs font-semibold text-gray-500 mb-1">Sources (Grounded):</p>
+                                       ${msg.sources.map(s => `<a href="${s.uri}" target="_blank" class="text-xs text-blue-500 hover:underline block">${s.title}</a>`).join('')}
+                                    </div>` : '';
+                                
+                                return `
+                                    <div class="flex justify-start">
+                                        <div class="bg-gray-100 p-3 rounded-xl rounded-tl-none max-w-[80%] shadow-sm">
+                                            <p class="text-sm font-extrabold text-emerald-600 mb-1 flex items-center">${icon('bot', 'w-4 h-4 mr-1')} EcoBot</p>
+                                            <p class="text-gray-700 text-sm whitespace-pre-line">${msg.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>')}</p>
+                                            ${sourcesHtml}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                    
+                    <!-- Input Area (Fixed at bottom) -->
+                    <div class="bg-white p-4 border-t border-gray-100 -mb-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="ai-chat-input" placeholder="Ask about traffic, ETA, or bookings..." class="flex-grow px-4 py-2 border border-gray-200 rounded-full focus:ring-emerald-500 focus:border-emerald-500" onkeypress="if(event.key === 'Enter') handleAiChatInput()">
+                            <button onclick="handleAiChatInput()" class="bg-emerald-600 text-white p-3 rounded-full hover:bg-emerald-700 transition">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            // Scroll to bottom after rendering
+            const chatArea = document.getElementById('chat-area');
+            if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function renderEmergencyScreen() {
+            const { emergencyContact, manualEmergencyContact } = appState.user;
+            const hasManual = !!manualEmergencyContact;
+            const location = { lat: '19.0760', lon: '72.8777' }; // Simulated for display
+            const googleMapsLink = `https://maps.google.com/maps?q=${location.lat},${location.lon}`;
+
+            $mainContent.innerHTML = `
+                ${renderHeader('Emergency', true)}
+                <div class="py-4 space-y-6 text-center">
+                    
+                    <!-- Main SOS Button -->
+                    <div class="p-4 bg-white rounded-2xl card-shadow">
+                        <button onclick="triggerEmergency('SOS')" class="sos-button w-full bg-red-600 text-white py-5 rounded-2xl font-extrabold text-3xl shadow-2xl shadow-red-400 hover:bg-red-700 transition transform active:scale-[0.98]">
+                            <span class="relative z-20 flex items-center justify-center">
+                                <i data-lucide="siren" class="w-8 h-8 mr-2 inline-block animate-wiggle"></i>
+                                SOS
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- NEW: Shared Location Info -->
+                    <div class="bg-white p-4 rounded-2xl card-shadow border border-blue-200">
+                        <h3 class="text-md font-bold text-gray-800 flex items-center justify-center">
+                           <i data-lucide="map-pin" class="w-5 h-5 mr-2 text-blue-600"></i>
+                           Your Location to be Shared
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1 mb-3">This info will be sent to emergency contacts.</p>
+                        <div class="relative w-full h-24 rounded-lg overflow-hidden border">
+                             <div class="map-bg w-full h-full opacity-50"></div>
+                             <div class="absolute inset-0 flex items-center justify-center">
+                                 <i data-lucide="crosshair" class="w-8 h-8 text-blue-700 animate-pulse"></i>
+                             </div>
+                        </div>
+                        <p class="text-sm font-mono text-gray-600 mt-2">${location.lat}, ${location.lon}</p>
+                        <a href="${googleMapsLink}" target="_blank" class="text-xs text-blue-600 hover:underline">View on Google Maps</a>
+                    </div>
+
+
+                    <!-- Contacts Grid -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Police -->
+                         <div onclick="triggerEmergency('Police')" class="bg-red-50 p-4 rounded-xl text-center cursor-pointer hover:bg-red-100 transition border border-red-200">
+                            <i data-lucide="shield-alert" class="w-8 h-8 mx-auto text-red-600 mb-1"></i>
+                            <p class="font-bold text-red-800">Police</p>
+                            <p class="text-xs text-gray-600">Dial 100</p>
+                        </div>
+                        
+                        <!-- Ambulance -->
+                         <div onclick="triggerEmergency('Hospital')" class="bg-red-50 p-4 rounded-xl text-center cursor-pointer hover:bg-red-100 transition border border-red-200">
+                            <i data-lucide="ambulance" class="w-8 h-8 mx-auto text-red-600 mb-1"></i>
+                            <p class="font-bold text-red-800">Ambulance</p>
+                            <p class="text-xs text-gray-600">Dial 108</p>
+                        </div>
+
+                        <!-- Family Contact -->
+                         <div onclick="triggerEmergency('Family')" class="bg-blue-50 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-100 transition border border-blue-200">
+                            <i data-lucide="users" class="w-8 h-8 mx-auto text-blue-600 mb-1"></i>
+                            <p class="font-bold text-blue-800">${emergencyContact.name}</p>
+                            <p class="text-xs text-gray-600">Primary Contact</p>
+                        </div>
+
+                        <!-- Manual Contact -->
+                        <div onclick="document.getElementById('contact-modal').classList.remove('hidden')" class="bg-gray-100 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-200 transition border border-gray-200">
+                             <i data-lucide="${hasManual ? 'phone-call' : 'plus-circle'}" class="w-8 h-8 mx-auto text-gray-600 mb-1"></i>
+                            <p class="font-bold text-gray-800">${hasManual ? 'Manual Contact' : 'Add Contact'}</p>
+                            <p class="text-xs text-gray-600">${hasManual ? manualEmergencyContact : 'Tap to add'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderProfileScreen() {
+             const { name, email, avatar, emergencyContact, manualEmergencyContact } = appState.user;
+             const history = appState.rideHistory;
+            
+            $mainContent.innerHTML = `
+                ${renderHeader('Profile', true)}
+                <div class="py-4 space-y-8">
+                    <!-- User Profile Card -->
+                    <div class="flex flex-col items-center bg-white p-6 rounded-2xl card-shadow">
+                        <img id="profile-avatar" src="${avatar}" class="w-24 h-24 rounded-full mb-3 border-4 border-emerald-400 object-cover" alt="User Avatar">
+                        
+                        <div class="flex items-center justify-center mt-2 mb-4 w-full">
+                            <input type="text" id="username-input" value="${name}" class="text-2xl font-bold text-gray-800 text-center border-b-2 border-dashed border-gray-200 focus:border-emerald-500 outline-none p-1 transition" onchange="updateUserName(this.value)">
+                        </div>
+
+                        <p class="text-sm text-gray-500 mb-4">${email}</p>
+                        
+                        <!-- Profile Picture Upload Button -->
+                        <label for="avatar-upload" class="cursor-pointer border border-emerald-600 text-emerald-600 px-4 py-1.5 rounded-full font-medium text-sm hover:bg-emerald-50 transition">
+                            Change Profile Picture
+                        </label>
+                        <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)"> 
+                    </div>
+
+                    <!-- Safety & Contacts -->
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Safety & Contacts</h3>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i data-lucide="heart-pulse" class="w-5 h-5 text-red-600 mr-2"></i>
+                                <span class="font-semibold text-red-700">Primary Contact:</span>
+                            </div>
+                        </div>
+                        <p class="text-sm ml-7 text-gray-700">${emergencyContact.name} (${emergencyContact.phone})</p>
+                        <div class="mt-4">
+                        ${manualEmergencyContact ? `
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i data-lucide="phone" class="w-5 h-5 text-red-600 mr-2"></i>
+                                    <span class="font-semibold text-red-700">Manual Contact:</span>
+                                </div>
+                                <button onclick="document.getElementById('contact-modal').classList.remove('hidden')" class="text-xs text-red-500 underline">Edit</button>
+                            </div>
+                            <p class="text-sm ml-7 text-gray-700">${manualEmergencyContact}</p>
+                        ` : `
+                            <button onclick="document.getElementById('contact-modal').classList.remove('hidden')" class="w-full bg-red-100 text-red-600 py-2 rounded-lg font-medium text-sm hover:bg-red-200 transition">
+                                Add Custom Emergency Contact
+                            </button>
+                        `}
+                        </div>
+                    </div>
+
+                    <!-- Ride History (NEW) -->
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Ride History</h3>
+                    <div class="bg-white rounded-2xl card-shadow divide-y divide-gray-100">
+                        ${history.length > 0 ? history.map(ride => `
+                            <div class="p-4 flex justify-between items-start hover:bg-gray-50">
+                                <div class="flex flex-col">
+                                    <p class="font-semibold text-gray-800 flex items-center mb-1">
+                                        <i data-lucide="route" class="w-4 h-4 mr-2 text-emerald-600"></i>
+                                        ${ride.pickupCity} to ${ride.dropoffCity}
+                                    </p>
+                                    <p class="text-xs text-gray-500 ml-6">
+                                        ${ride.date} | ${ride.rideType} | ${appState.currency}${ride.fare.toFixed(0)}
+                                    </p>
+                                    <div class="flex items-center text-xs mt-1 ml-6">
+                                        ${[...Array(5)].map((_, i) => `<i data-lucide="star" class="w-3 h-3 ${i < (ride.feedback?.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}"></i>`).join('')}
+                                    </div>
+                                    ${ride.needsWheelchair ? `
+                                    <div class="flex items-center text-xs text-blue-600 font-semibold mt-1 ml-6 bg-blue-100 px-2 py-0.5 rounded-full w-fit">
+                                       <i data-lucide="wheelchair" class="w-3 h-3 mr-1"></i>
+                                       Accessible
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-emerald-600">${ride.ecoSaved}</p>
+                                    <button onclick="showRideDetails(${ride.id})" class="text-xs text-gray-400 hover:underline">View Details</button>
+                                </div>
+                            </div>
+                        `).join('') : `
+                            <div class="p-6 text-center text-gray-500">
+                                <i data-lucide="history" class="w-10 h-10 mx-auto text-gray-300 mb-2"></i>
+                                No ride history available yet. Complete a ride to see it here!
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- Logout Button -->
+                    <button onclick="appState.isLoggedIn = false; navigate('${SCREENS.LOGIN}')" class="w-full border-2 border-red-500 text-red-500 py-3 rounded-xl font-semibold text-lg flex items-center justify-center transition hover:bg-red-50">
+                        <i data-lucide="log-out" class="w-5 h-5 mr-2"></i>
+                        Logout
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+        
+        // --- NEW Ride Details Modal Functions ---
+        function showRideDetails(rideId) {
+            const ride = appState.rideHistory.find(r => r.id === rideId);
+            if (!ride) return;
+
+            const modal = document.getElementById('ride-details-modal');
+            const content = document.getElementById('ride-details-content');
+            
+            content.innerHTML = `
+                <h3 class="font-handwritten text-4xl text-emerald-700 mb-2">Trip Details</h3>
+                <p class="text-sm text-gray-500 mb-4">${ride.date}</p>
+                
+                <div class="text-left space-y-3">
+                    <div class="flex items-center">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-emerald-600 mr-3"></i>
+                        <p class="text-gray-700"><span class="font-semibold">From:</span> ${ride.pickupCity}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="flag" class="w-5 h-5 text-red-500 mr-3"></i>
+                        <p class="text-gray-700"><span class="font-semibold">To:</span> ${ride.dropoffCity}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="timer" class="w-5 h-5 text-gray-500 mr-3"></i>
+                        <p class="text-gray-700"><span class="font-semibold">Driver Arrival:</span> ${ride.driverEtaToPickup}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="indian-rupee" class="w-5 h-5 text-gray-500 mr-3"></i>
+                        <p class="text-gray-700"><span class="font-semibold">Final Fare:</span> ${appState.currency}${ride.fare.toFixed(0)}</p>
+                    </div>
+                    <!-- NEW: Display Feedback -->
+                     <div class="flex items-start">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 mr-3 mt-1"></i>
+                        <div>
+                            <p class="text-gray-700"><span class="font-semibold">Your Rating:</span> ${ride.feedback.rating} out of 5</p>
+                            ${ride.feedback.suggestion ? `<p class="text-xs italic text-gray-500 mt-1">"${ride.feedback.suggestion}"</p>` : ''}
+                        </div>
+                    </div>
+                     ${ride.needsWheelchair ? `
+                        <div class="flex items-center bg-blue-100 p-2 rounded-lg">
+                           <i data-lucide="wheelchair" class="w-5 h-5 text-blue-600 mr-3"></i>
+                           <p class="text-sm font-semibold text-blue-800">Wheelchair Accessible Ride</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-teal-200">
+                    <p class="font-semibold text-emerald-800">Your Eco Contribution</p>
+                    <p class="text-sm text-gray-600">${ride.ecoSaved}</p>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeRideDetailsModal() {
+            document.getElementById('ride-details-modal').classList.add('hidden');
+        }
+        
+        function updateUserName(newName) {
+            if (newName.trim() && newName !== appState.user.name) {
+                appState.user.name = newName;
+                showToast(`Username changed to ${newName}`, 'success');
+            }
+        }
+        
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    appState.user.avatar = imageUrl;
+                    document.getElementById('profile-avatar').src = imageUrl;
+                    showToast('Profile picture updated!', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- NEW Ride Timer & AI Message Functions ---
+        
+        function startRide() {
+            appState.activeRideInProgress = true;
+            appState.rideDetails.rideTimerSeconds = 600; // 10 minutes
+            
+            if (appState.rideDetails.timerInterval) clearInterval(appState.rideDetails.timerInterval);
+
+            appState.rideDetails.timerInterval = setInterval(() => {
+                const timerEl = document.getElementById('ride-timer');
+                if (appState.rideDetails.rideTimerSeconds > 0) {
+                    appState.rideDetails.rideTimerSeconds--;
+                    if (timerEl) {
+                        const minutes = Math.floor(appState.rideDetails.rideTimerSeconds / 60);
+                        const seconds = appState.rideDetails.rideTimerSeconds % 60;
+                        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                } else {
+                    stopRideTimer();
+                    if(timerEl) timerEl.textContent = "00:00";
+                }
+            }, 1000);
+
+            navigate(SCREENS.LIVE_TRACKING);
+            setTimeout(showProactiveAiMessage, 7000); // Proactive message after 7 seconds
+        }
+
+        function stopRideTimer() {
+             if (appState.rideDetails.timerInterval) {
+                clearInterval(appState.rideDetails.timerInterval);
+                appState.rideDetails.timerInterval = null;
+            }
+        }
+        
+        function showProactiveAiMessage() {
+            if (!appState.activeRideInProgress) return;
+            const messages = [
+                "AI: Heavy traffic on MG Road. Suggesting detour via Park Street to save 4 minutes. Driver has been notified.",
+                "AI: Weather ahead looks clear. Your ETA remains unchanged.",
+                "AI: A faster route is available due to easing congestion. Your new ETA is 2 minutes earlier."
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            showToast(randomMsg, 'location');
+        }
+
+        // --- NEW Feedback Modal Functions ---
+        let currentRating = 0;
+        
+        function renderFeedbackStars() {
+            const container = document.getElementById('feedback-stars');
+            container.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElement('i');
+                star.dataset.lucide = 'star';
+                star.className = `w-10 h-10 feedback-star ${i <= currentRating ? 'selected' : ''}`;
+                star.onclick = () => setRating(i);
+                container.appendChild(star);
+            }
+            lucide.createIcons();
+        }
+
+        function setRating(rating) {
+            currentRating = rating;
+            renderFeedbackStars();
+        }
+
+        function showFeedbackModal() {
+            currentRating = 0;
+            document.getElementById('feedback-suggestion').value = '';
+            renderFeedbackStars();
+            document.getElementById('feedback-modal').classList.remove('hidden');
+        }
+
+        function submitFeedback() {
+            const latestRide = appState.rideHistory[0];
+            if (latestRide) {
+                latestRide.feedback = {
+                    rating: currentRating,
+                    suggestion: document.getElementById('feedback-suggestion').value.trim()
+                };
+            }
+            document.getElementById('feedback-modal').classList.add('hidden');
+            stopRideTimer();
+            appState.activeRideInProgress = false;
+            navigate(SCREENS.LIVE_TRACKING); // Navigate to completed screen
+        }
+
+        // --- Navigation & Control Flow ---
+
+        function goBack() {
+            if ([SCREENS.CONFIRM_BOOKING, SCREENS.LOCATION_SELECT].includes(appState.screen)) {
+                navigate(SCREENS.HOME);
+            } else if (appState.screen === SCREENS.LIVE_TRACKING) {
+                navigate(SCREENS.HOME);
+            } else if (appState.screen === SCREENS.REGISTER || appState.screen === SCREENS.FORGOT_PASSWORD) {
+                navigate(SCREENS.LOGIN);
+            } else if ([SCREENS.EMERGENCY, SCREENS.PROFILE, SCREENS.AI_SUPPORT].includes(appState.screen)) {
+                navigate(SCREENS.HOME);
+            } else {
+                navigate(SCREENS.HOME);
+            }
+        }
+        
+        function renderNavBar() {
+            const navItems = [
+                { id: SCREENS.HOME, icon: 'Home', label: 'Home' },
+                { id: SCREENS.LIVE_TRACKING, icon: 'Map', label: 'Tracking' },
+                { id: SCREENS.AI_SUPPORT, icon: 'MessageSquare', label: 'AI Chat' },
+                { id: SCREENS.EMERGENCY, icon: 'Bell', label: 'Safety' },
+                { id: SCREENS.PROFILE, icon: 'User', label: 'Profile' },
+            ];
+
+            if (!appState.isLoggedIn || [SCREENS.LOGIN, SCREENS.REGISTER, SCREENS.LOCATION_SELECT, SCREENS.FORGOT_PASSWORD].includes(appState.screen)) {
+                $bottomNav.innerHTML = '';
+                $bottomNav.classList.add('hidden');
+                return;
+            } else {
+                $bottomNav.classList.remove('hidden');
+            }
+
+            $bottomNav.innerHTML = navItems.map(item => {
+                const isActive = item.id === appState.screen;
+                let activeClasses = isActive ? 'text-emerald-600' : 'text-gray-400 hover:text-emerald-500';
+                
+                // Keep tracking highlighted if a ride is in progress, even on other screens
+                if (appState.activeRideInProgress && item.id === SCREENS.LIVE_TRACKING) {
+                    activeClasses = 'text-emerald-600 animate-pulse';
+                }
+
+                return `
+                    <button onclick="navigate('${item.id}')" class="flex flex-col items-center justify-center p-2 transition ${activeClasses}">
+                        <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                        <span class="text-xs font-medium">${item.label}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+        
+        function saveManualContact() {
+            const input = $manualContactInput.value.trim();
+            const validNumberRegex = /^\+?(\d[\s-]?){8,15}$/; 
+
+            if (input && !validNumberRegex.test(input)) {
+                 showModal('Invalid Input', 'Please enter a valid phone number (e.g., +91 99887 76655).');
+                 return;
+            }
+
+            appState.user.manualEmergencyContact = input;
+            document.getElementById('contact-modal').classList.add('hidden');
+            navigate(SCREENS.EMERGENCY);
+            showToast(input ? `Manual emergency contact saved: ${input}.` : 'Manual emergency contact cleared.', 'success');
+        }
+
+        async function triggerEmergency(target) {
+            playSosSound(); // Play beep sound on click
+            toggleLoading(true, 'Activating emergency protocol...');
+            let location = { lat: 'Unknown', lon: 'Unknown', accuracy: 'N/A' };
+            let locationMsg = 'Location data unavailable. Sharing approximate location.';
+
+            try {
+                // Simulate quick location fetch
+                location = await new Promise((resolve) => setTimeout(() => resolve({ lat: '19.0760', lon: '72.8777', accuracy: '10' }), 500)); 
+                locationMsg = `Your **precise location (Lat: ${location.lat}, Lon: ${location.lon} - Mumbai)** has been determined with ${location.accuracy}m accuracy.`;
+            } catch (error) {
+                console.warn(error);
+            } finally {
+                toggleLoading(false);
+            }
+
+            const familyContact = appState.user.emergencyContact;
+            const manualContact = appState.user.manualEmergencyContact;
+            const googleMapsLink = `https://maps.google.com/maps?q=${location.lat},${location.lon}`;
+
+            let title, message;
+            const genericForwardMsg = `${locationMsg}\n\nA live map link has been generated to track your location:\n${googleMapsLink}`;
+
+            if (target === 'SOS') {
+                title = "SOS Alert: Location Forwarded";
+                
+                let contactList = `
+                - **Police (100):** Alert message sent.
+                - **Ambulance (108):** Alert message sent.
+                - **${familyContact.name} (${familyContact.phone}):** Automated SMS sent.
+                `;
+                if (manualContact) {
+                    contactList += `\n- **Manual Contact (${manualContact}):** Automated SMS sent.`;
+                }
+
+                message = `**IMMEDIATE ACTION TAKEN!**\n\n${genericForwardMsg}\n\n\n**Alerts Sent To:**\n${contactList}`;
+
+            } else if (target === 'Police') {
+                title = "Contacting Police (100)";
+                message = `Simulating call to police (100). Location and details are being shared.\n\n${genericForwardMsg}`;
+            } else if (target === 'Hospital') {
+                title = "Contacting Ambulance (108)";
+                message = `Simulating call to Ambulance/Hospital (108). Location and details are being shared.\n\n${genericForwardMsg}`;
+            } else if (target === 'Family') {
+                title = "Contacting Emergency Contact";
+                message = `Simulating SMS/message to **${familyContact.name}** at **${familyContact.phone}**.\n\n${genericForwardMsg}`;
+            }
+
+            showModal(title, message);
+        }
+
+        // --- Main Render Function ---
+        function render() {
+            renderNavBar();
+
+            switch (appState.screen) {
+                case SCREENS.HOME:
+                    renderHomeScreen();
+                    break;
+                case SCREENS.REGISTER:
+                    renderRegistrationScreen();
+                    break;
+                case SCREENS.FORGOT_PASSWORD: // NEW
+                    renderForgotPasswordScreen();
+                    break;
+                case SCREENS.LOCATION_SELECT:
+                    renderLocationSelectionScreen();
+                    break;
+                case SCREENS.CONFIRM_BOOKING:
+                    renderConfirmBookingScreen();
+                    break;
+                case SCREENS.LIVE_TRACKING:
+                    renderLiveTrackingScreen();
+                    break;
+                case SCREENS.EMERGENCY:
+                    renderEmergencyScreen();
+                    break;
+                case SCREENS.PROFILE:
+                    renderProfileScreen();
+                    break;
+                case SCREENS.AI_SUPPORT:
+                    renderAiSupportScreen();
+                    break;
+                case SCREENS.LOGIN:
+                default:
+                    renderLoginScreen();
+                    break;
+            }
+            lucide.createIcons();
+        }
+
+        // Initialize App on load
+        window.onload = render;
+
+    </script>
+
+</body>
+</html>
+
