@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoRide Mobile App (V7)</title>
+    <title>EcoRide Mobile App (V6)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Lucide Icons for aesthetic icons -->
@@ -15,7 +15,11 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f4f8; 
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             min-height: 100vh;
+            padding: 20px;
         }
         
         .font-handwritten {
@@ -24,10 +28,15 @@
 
         .mobile-frame {
             width: 100%;
-            min-height: 100vh;
+            max-width: 400px;
+            min-height: 80vh;
             background-color: #ffffff;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 30px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .content-area {
@@ -36,11 +45,6 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 70px; 
-            /* Added for better readability on wide screens */
-            width: 100%;
-            max-w: 3xl; /* 768px */
-            margin-left: auto;
-            margin-right: auto;
         }
 
         .bottom-nav {
@@ -150,38 +154,6 @@
         .animate-pop {
             animation: pop 0.3s ease-out;
         }
-
-        /* --- CSS for Feedback Star Animation --- */
-        @keyframes starPop {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .feedback-star {
-            cursor: pointer;
-            transition: color 0.2s ease-in-out;
-        }
-        .feedback-star.selected {
-            color: #f59e0b; /* amber-500 */
-            animation: starPop 0.4s ease-out;
-        }
-        
-        /* --- NEW: CSS for Wheelchair Animation --- */
-        #animation-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 100;
-            overflow: hidden;
-        }
-        .wheelchair-icon-animation {
-            position: absolute;
-            color: #0d9488; /* teal-600 */
-            transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
     </style>
 </head>
 <body class="antialiased">
@@ -208,7 +180,7 @@
         </div>
 
         <!-- Fixed Bottom Navigation Bar -->
-        <div id="bottom-nav" class="fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center bottom-nav z-10">
+        <div id="bottom-nav" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] bg-white border-t border-gray-200 flex justify-around items-center bottom-nav z-10 rounded-b-3xl">
             <!-- Navigation items will be managed by JS -->
         </div>
 
@@ -265,27 +237,6 @@
             </div>
         </div>
 
-        <!-- Feedback Modal (NEW) -->
-        <div id="feedback-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-95">
-                <h3 class="text-2xl font-bold text-center text-emerald-600 mb-2">Ride Complete!</h3>
-                <p class="text-center text-gray-600 mb-4">How was your experience with ${appState.rideDetails.driverName}?</p>
-                
-                <div id="feedback-stars" class="flex justify-center text-gray-300 text-4xl mb-4 space-x-2">
-                    <!-- Stars injected by JS -->
-                </div>
-
-                <textarea id="feedback-suggestion" class="w-full h-24 p-3 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 mb-4" placeholder="Have any suggestions? (Optional)"></textarea>
-
-                <button onclick="submitFeedback()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold hover:bg-emerald-700 transition">
-                    Submit Feedback
-                </button>
-            </div>
-        </div>
-        
-        <!-- NEW: Animation Container -->
-        <div id="animation-container"></div>
-
     </div>
 
     <script>
@@ -295,16 +246,23 @@
         const MAX_RETRIES = 3;
 
         // --- Configuration & Static Data ---
-        // DEPRECATED: Removed hardcoded city lists to simulate a dynamic, India-wide search.
-        // const INDIAN_CITIES = [ ... ]; 
-        // const ASSOCIATED_LOCATIONS = [ ... ];
-        // const MASTER_LOCATION_LIST = [ ... ];
+        // Expanded location list including the user's requested cities and associated villages/suburbs
+        const INDIAN_CITIES = [
+            'Agra', 'Bengaluru', 'Chennai', 'Delhi', 'Ernakulam', 'Faridabad', 'Guwahati', 
+            'Hyderabad', 'Indore', 'Jaipur', 'Kolkata', 'Lucknow', 'Mumbai', 'Nagpur', 
+            'Ooty', 'Pune', 'Quilon', 'Ranchi', 'Surat', 'Thane', 'Udaipur', 'Vadodara', 
+            'Warangal', 'Yelahanka', 'Zirakpur',
+            'Kolhapur', 'Warananagar', 'Kodoli' // Added Cities/Towns
+        ]; 
 
-        // This list is now only used for showing initial popular locations when search is empty.
-        const POPULAR_LOCATIONS = [
-            'Mumbai', 'Delhi', 'Bengaluru', 'Kolkata', 'Chennai', 'Pune', 
-            'Hyderabad', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kolhapur', 'Warananagar', 'Kodoli'
+        const ASSOCIATED_LOCATIONS = [
+            'Kolhapur - Shivaji University', 'Kolhapur - Kagal', 'Kolhapur - Ichalkaranji', 
+            'Warananagar - Warana Factory', 'Warananagar - Kodoli Road', 
+            'Kodoli - Peth Vadgaon', 'Pune - Hinjewadi IT Park', 'Mumbai - Bandra Kurla Complex',
+            'Kolhapur - Shiroli MIDC', 'Kodoli - Sarud Village'
         ];
+
+        const MASTER_LOCATION_LIST = [...INDIAN_CITIES, ...ASSOCIATED_LOCATIONS].sort();
 
         const RIDE_OPTIONS = [
             { id: 'E-Rikshaw', icon: 'Moped', label: 'E-Rikshaw', baseFare: 50 },
@@ -363,9 +321,6 @@
                 licensePlate: 'DL 01 AA 1234',
                 driverEtaToPickup: '2 min', // New state for driver ETA
                 ecoSummary: null, 
-                // NEW: Ride Timer State
-                rideTimerSeconds: null,
-                timerInterval: null,
             },
             // Used for location selection
             locationSettingTarget: null,
@@ -448,29 +403,6 @@
             }
         }
 
-        // --- NEW: Audio Utility for SOS Beep ---
-        let audioCtx;
-        function playSosSound() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // High-pitched beep
-                gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.8);
-            } catch (e) {
-                console.error("Web Audio API is not supported in this browser or failed to init.", e);
-            }
-        }
-
-
         // --- Utility Functions ---
 
         /** Displays a custom modal instead of alert() */
@@ -503,7 +435,7 @@
             let bgColor = 'bg-emerald-600';
             
             if (type === 'location') {
-                iconHtml = `<i data-lucide="bell" class="w-6 h-6 mr-3 text-yellow-300 animate-wiggle"></i>`;
+                iconHtml = `<i data-lucide="map-pin" class="w-6 h-6 mr-3 text-yellow-300 animate-bounce"></i>`;
                 bgColor = 'bg-blue-600';
             } else if (type === 'success') {
                 iconHtml = `<i data-lucide="check-circle" class="w-5 h-5 mr-2 animate-pop"></i>`;
@@ -656,18 +588,49 @@
 
         // --- Core Application Logic with Wheelchair Feature ---
         
-        function setRideType(typeId) {
+        // Finalizes the ride type and calculates fare after wheelchair prompt
+        function finalizeRideType(typeId, extraCost) {
             appState.rideDetails.rideType = typeId;
-            navigate(SCREENS.HOME); // Re-render to update selection
+            appState.rideDetails.needsWheelchair = extraCost > 0;
+            
+            const selectedOption = RIDE_OPTIONS.find(o => o.id === typeId);
+            let baseFare = selectedOption.baseFare + (Math.random() * 50); // Base random fare
+            
+            appState.rideDetails.fare = baseFare + extraCost; // Apply extra cost
+            appState.rideDetails.estimatedTime = `${Math.floor(Math.random() * 10) + 10} min`;
+            appState.rideDetails.driverEtaToPickup = `${Math.floor(Math.random() * 5) + 2} min`;
+
+            navigate(SCREENS.CONFIRM_BOOKING);
+        }
+        
+        // Prompts for wheelchair if E-Car or E-Rikshaw is selected
+        function promptForWheelchair(typeId) {
+            // Only prompt for E-Car and E-Rikshaw
+            if (typeId !== 'E-Car' && typeId !== 'E-Rikshaw') {
+                finalizeRideType(typeId, 0); 
+                return;
+            }
+
+            const extraCost = 30;
+            const modalContent = `
+                <p class="text-base text-gray-700 mb-4 flex items-center">
+                    <i data-lucide="wheelchair" class="w-6 h-6 text-emerald-600 mr-2"></i>
+                    Would you like a wheelchair-accessible vehicle? (Additional ${appState.currency}${extraCost.toFixed(0)} applies)
+                </p>
+                <div class="flex space-x-3">
+                    <button onclick="finalizeRideType('${typeId}', ${extraCost}); closeModal();" class="w-1/2 bg-emerald-600 text-white py-2 rounded-xl font-medium hover:bg-emerald-700 transition flex items-center justify-center">
+                        <i data-lucide="check" class="w-4 h-4 mr-1"></i> Yes, Add
+                    </button>
+                    <button onclick="finalizeRideType('${typeId}', 0); closeModal();" class="w-1/2 border border-gray-300 py-2 rounded-xl font-medium hover:bg-gray-100 transition">
+                        No, Standard
+                    </button>
+                </div>
+            `;
+            showModal('Accessibility Request', 'Specially equipped vehicles can be made available for accessibility.', modalContent);
         }
 
-        // NEW: Separate function for toggling wheelchair and triggering animation
-        function toggleWheelchair() {
-            appState.rideDetails.needsWheelchair = !appState.rideDetails.needsWheelchair;
-            if (appState.rideDetails.needsWheelchair) {
-                triggerWheelchairAnimation();
-            }
-            navigate(SCREENS.HOME); // Re-render to show toggle state
+        function setRideType(typeId) {
+            promptForWheelchair(typeId);
         }
 
         function setPaymentMode(modeId) {
@@ -680,51 +643,14 @@
             let message = '';
             if (appState.locationSettingTarget === 'pickupCity') {
                 appState.rideDetails.pickupCity = city;
-                message = `<span class='font-bold text-yellow-300'>${city}</span>`;
+                message = `Pickup set to <span class='font-bold text-yellow-300'>${city}</span>`;
             } else if (appState.locationSettingTarget === 'dropoffCity') {
                 appState.rideDetails.dropoffCity = city;
                 message = `Destination set to <span class='font-bold text-yellow-300'>${city}</span>`;
             }
             appState.locationSettingTarget = null;
-            showToast(message, 'success'); // Changed type for clarity
+            showToast(message, 'location'); // Use the new toast notification
             navigate(SCREENS.HOME);
-        }
-
-        // NEW: Wheelchair Animation Function
-        function triggerWheelchairAnimation() {
-            const container = document.getElementById('animation-container');
-            if (!container) return;
-            
-            const vehicleEl = document.getElementById(`ride-option-${appState.rideDetails.rideType}`);
-            const wheelchairToggleEl = document.getElementById('wheelchair-toggle');
-            if (!vehicleEl || !wheelchairToggleEl) return;
-
-            const vehicleRect = vehicleEl.getBoundingClientRect();
-            const toggleRect = wheelchairToggleEl.getBoundingClientRect();
-            const frameRect = document.getElementById('app').getBoundingClientRect();
-            
-            const startX = toggleRect.left - frameRect.left + (toggleRect.width / 2);
-            const startY = toggleRect.top - frameRect.top + (toggleRect.height / 2);
-            
-            const endX = vehicleRect.left - frameRect.left + (vehicleRect.width / 2);
-            const endY = vehicleRect.top - frameRect.top + (vehicleRect.height / 2);
-
-            const wheelchair = document.createElement('div');
-            wheelchair.innerHTML = icon('wheelchair', 'w-8 h-8');
-            wheelchair.className = 'wheelchair-icon-animation';
-            wheelchair.style.left = `${startX - 16}px`;
-            wheelchair.style.top = `${startY - 16}px`;
-
-            container.appendChild(wheelchair);
-            lucide.createIcons();
-
-            requestAnimationFrame(() => {
-                wheelchair.style.transform = `translate(${endX - startX}px, ${endY - startY}px) scale(0.5)`;
-            });
-
-            setTimeout(() => {
-                wheelchair.remove();
-            }, 1200);
         }
         
         // --- Gemini Feature 1: Grounded AI Traffic Info & Visualization ---
@@ -802,14 +728,13 @@
                 id: Date.now(),
                 date: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }),
                 ecoSaved: `${carbonSaved}kg CO2 saved`,
-                ecoSummary: result.text,
-                feedback: { rating: 0, suggestion: '' } // Initialize feedback
+                ecoSummary: result.text
             };
             appState.rideHistory.unshift(completedRide); // Add to beginning of array
+            appState.activeRideInProgress = false; // Ride is now complete
             
             toggleLoading(false);
-            // NEW: Show feedback modal instead of navigating directly
-            showFeedbackModal();
+            navigate(SCREENS.LIVE_TRACKING);
         }
 
         // --- Screen Rendering Functions ---
@@ -975,12 +900,10 @@
                 return;
             }
             
-            const { pickupCity, dropoffCity, needsWheelchair } = appState.rideDetails;
-            const wheelchairSelected = needsWheelchair;
-
+            const { pickupCity, dropoffCity } = appState.rideDetails;
             $mainContent.innerHTML = `
                 ${renderHeader('EcoRide', false)}
-                <div class="mt-4 space-y-5">
+                <div class="mt-4 space-y-6">
                     <!-- Pickup and Destination Fields -->
                     <h3 class="text-xl font-bold text-gray-800">Where to?</h3>
                     <div class="bg-white p-4 rounded-2xl card-shadow border border-gray-100 space-y-4">
@@ -1007,27 +930,6 @@
                             <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
                         </div>
                     </div>
-                    
-                     <!-- NEW: Accessibility Options -->
-                    <div id="wheelchair-toggle" onclick="toggleWheelchair()" class="cursor-pointer bg-white p-4 rounded-2xl card-shadow border ${wheelchairSelected ? 'border-teal-500 ring-2 ring-teal-200' : 'border-gray-100'} transition flex items-center justify-between">
-                         <div class="flex items-center">
-                            <i data-lucide="wheelchair" class="w-8 h-8 ${wheelchairSelected ? 'text-teal-600' : 'text-gray-500'} mr-4"></i>
-                            <div>
-                                <p class="font-handwritten text-2xl ${wheelchairSelected ? 'text-teal-700' : 'text-gray-700'}">Accessibility</p>
-                                <p class="text-xs text-gray-500">Need a wheelchair-friendly ride?</p>
-                            </div>
-                         </div>
-                         <div class="w-12 h-7 flex items-center rounded-full p-1 transition duration-300 ease-in-out ${wheelchairSelected ? 'bg-teal-500' : 'bg-gray-300'}">
-                            <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition duration-300 ease-in-out ${wheelchairSelected ? 'translate-x-5' : ''}"></div>
-                        </div>
-                    </div>
-
-
-                    <!-- Ride Options Grid -->
-                    <h3 class="text-xl font-semibold text-gray-800 pt-2">Choose your Ride</h3>
-                    <div class="grid grid-cols-3 gap-4">
-                        ${RIDE_OPTIONS.map(opt => renderRideOption(opt.icon, opt.label, opt.id)).join('')}
-                    </div>
 
                     <!-- Main Booking Button (Only if both set) -->
                     ${(pickupCity !== 'Current Location' && dropoffCity !== 'Select Destination') ? 
@@ -1035,9 +937,15 @@
                             Request ${appState.rideDetails.rideType}
                         </button>` 
                         : `<button class="w-full bg-gray-300 text-gray-600 py-4 rounded-2xl font-bold text-lg cursor-not-allowed" disabled>
-                            Select Locations to Book
+                            Select Both Locations to Book
                         </button>`
                     }
+
+                    <!-- Ride Options Grid -->
+                    <h3 class="text-xl font-semibold text-gray-800 pt-4">Other Options</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        ${RIDE_OPTIONS.map(opt => renderRideOption(opt.icon, opt.label, opt.id)).join('')}
+                    </div>
                 </div>
             `;
             lucide.createIcons();
@@ -1045,7 +953,7 @@
         
         function renderRideOption(iconName, title, typeId) {
             return `
-                <div id="ride-option-${typeId}" onclick="setRideType('${typeId}')" class="flex flex-col items-center bg-white p-4 rounded-2xl card-shadow border ${appState.rideDetails.rideType === typeId ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-100'} transition hover:border-emerald-400 cursor-pointer">
+                <div onclick="setRideType('${typeId}')" class="flex flex-col items-center bg-white p-4 rounded-2xl card-shadow border ${appState.rideDetails.rideType === typeId ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-100'} transition hover:border-emerald-400 cursor-pointer">
                     <div class="p-2 bg-emerald-100 rounded-full mb-2">
                         <i data-lucide="${iconName}" class="w-6 h-6 text-emerald-600"></i>
                     </div>
@@ -1055,51 +963,26 @@
         }
 
         function filterCities(event) {
-            const query = event.target.value.toLowerCase().trim();
+            const query = event.target.value.toLowerCase();
             const list = document.getElementById('city-list');
             list.innerHTML = ''; 
 
-            let results = [];
+            // Filter against the expanded master list
+            const filteredLocations = MASTER_LOCATION_LIST.filter(loc => loc.toLowerCase().startsWith(query) || loc.toLowerCase().includes(query)).slice(0, 50); // Limit to 50 for performance
 
-            if (query === '') {
-                // Show popular locations if search is empty
-                results = POPULAR_LOCATIONS;
-            } else {
-                // Simulate a dynamic API fetch for "all cities and villages"
-                // We dynamically generate results based on the user's query.
-                const capitalizedQuery = query.charAt(0).toUpperCase() + query.slice(1);
-                
-                results = [
-                    capitalizedQuery, // The city/village itself
-                    `${capitalizedQuery} - Main Bazaar`,
-                    `${capitalizedQuery} - Railway Station`,
-                    `${capitalizedQuery} - Bus Stand`,
-                    `Nearby ${capitalizedQuery} Village 1`, // Simulating nearby village
-                    `${capitalizedQuery} - Tech Park`, // Simulating sub-location
-                ];
-                
-                // Add specific examples if user searches for them
-                if (query.startsWith('kolha')) {
-                    results.push('Kolhapur - Shivaji University', 'Kolhapur - Kagal');
-                } else if (query.startsWith('kodo')) {
-                    results.push('Kodoli - Peth Vadgaon', 'Kodoli - Sarud Village');
-                } else if (query.startsWith('pune')) {
-                    results.push('Pune - Hinjewadi IT Park', 'Pune - Kothrud');
-                }
-            }
-            
-            if (results.length === 0) { // Should not happen with this logic, but good practice
-                list.innerHTML = '<p class="p-4 text-center text-gray-500">No locations found matching your search.</p>';
+            if (filteredLocations.length === 0) {
+                list.innerHTML = '<p class="p-4 text-center text-gray-500">No cities or villages found matching your search.</p>';
                 return;
             }
 
-            results.forEach(loc => {
-                const isVillage = loc.toLowerCase().includes('village') || loc.includes(' - ');
+            filteredLocations.forEach(loc => {
+                const target = appState.locationSettingTarget === 'pickupCity' ? 'Pickup' : 'Destination';
+                const isVillage = loc.includes(' - '); // Simple check for village/suburb names
                 const item = document.createElement('div');
                 item.className = 'py-3 px-4 border-b border-gray-100 text-gray-800 font-medium hover:bg-emerald-50 cursor-pointer flex justify-between items-center';
                 item.innerHTML = `
                     <span>${loc}</span>
-                    ${isVillage ? '<span class="text-xs text-emerald-600 font-semibold">Area/Village</span>' : ''}
+                    ${isVillage ? '<span class="text-xs text-emerald-600 font-semibold">Village/Suburb</span>' : ''}
                 `;
                 item.onclick = () => {
                     setLocation(loc);
@@ -1139,18 +1022,8 @@
         }
 
         function renderConfirmBookingScreen() {
-            const { pickupCity, dropoffCity, rideType, paymentMode, needsWheelchair } = appState.rideDetails;
-            
-            // Recalculate fare based on current state
-            const selectedOption = RIDE_OPTIONS.find(o => o.id === rideType);
-            let baseFare = selectedOption.baseFare + (Math.random() * 50); // Base random fare
-            const wheelchairCost = needsWheelchair ? 30 : 0;
-            appState.rideDetails.fare = baseFare + wheelchairCost;
-            appState.rideDetails.estimatedTime = `${Math.floor(Math.random() * 10) + 10} min`;
-            appState.rideDetails.driverEtaToPickup = `${Math.floor(Math.random() * 5) + 2} min`;
-            
+            const { pickupCity, dropoffCity, rideType, paymentMode, estimatedTime, fare, needsWheelchair } = appState.rideDetails;
             const currency = appState.currency;
-            const { fare, estimatedTime } = appState.rideDetails;
 
             $mainContent.innerHTML = `
                 ${renderHeader('Confirm Booking', true)}
@@ -1169,7 +1042,7 @@
                     ${needsWheelchair ? `
                         <div class="bg-blue-50 p-3 rounded-xl flex items-center shadow-inner border border-blue-200">
                             <i data-lucide="wheelchair" class="w-6 h-6 text-blue-600 mr-3"></i>
-                            <span class="text-sm font-semibold text-blue-800">Accessibility: Wheelchair-equipped ${rideType} requested. (+${currency}${wheelchairCost})</span>
+                            <span class="text-sm font-semibold text-blue-800">Accessibility: Wheelchair-equipped ${rideType} requested.</span>
                         </div>
                     ` : ''}
 
@@ -1178,7 +1051,7 @@
                     <h3 class="text-lg font-bold text-gray-800">Selected Ride Type</h3>
                     <div class="grid grid-cols-3 gap-3">
                         ${RIDE_OPTIONS.map(opt => `
-                            <button onclick="setRideType('${opt.id}'); navigate(SCREENS.CONFIRM_BOOKING);" class="flex flex-col items-center p-3 rounded-xl border ${rideType === opt.id ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' : 'border-gray-200 bg-white hover:bg-gray-50'} transition">
+                            <button onclick="setRideType('${opt.id}')" class="flex flex-col items-center p-3 rounded-xl border ${rideType === opt.id ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' : 'border-gray-200 bg-white hover:bg-gray-50'} transition">
                                 <i data-lucide="${opt.icon}" class="w-6 h-6 ${rideType === opt.id ? 'text-emerald-600' : 'text-gray-500'} mb-1"></i>
                                 <span class="font-semibold text-sm text-gray-800">${opt.label}</span>
                             </button>
@@ -1204,7 +1077,7 @@
                     <!-- Estimated Fare & Time -->
                     <div class="flex justify-between items-center py-4 border-t border-b border-gray-100">
                         <div class="flex flex-col items-start">
-                             <p class="text-xl font-extrabold text-emerald-600">${currency}${fare.toFixed(0)}</p>
+                             <p class="text-xl font-extrabold text-emerald-600">${currency}${appState.rideDetails.fare.toFixed(0)}</p>
                              <p class="text-xs text-gray-500 font-medium">Estimated Final Fare</p>
                         </div>
                         <div class="text-right">
@@ -1213,7 +1086,7 @@
                         </div>
                     </div>
 
-                    <button onclick="startRide()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform active:scale-[0.99]">
+                    <button onclick="appState.activeRideInProgress = true; navigate('${SCREENS.LIVE_TRACKING}')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition transform active:scale-[0.99]">
                         Confirm & Pay with ${paymentMode}
                     </button>
                 </div>
@@ -1225,19 +1098,13 @@
             const { driverName, vehicle, licensePlate, pickupCity, dropoffCity, ecoSummary, driverEtaToPickup } = appState.rideDetails;
             const isRideComplete = ecoSummary !== null;
             
-            // Format timer
-            const minutes = Math.floor(appState.rideDetails.rideTimerSeconds / 60);
-            const seconds = appState.rideDetails.rideTimerSeconds % 60;
-            const timerDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
             $mainContent.innerHTML = `
                 ${renderHeader(isRideComplete ? 'Trip Complete' : 'Live Tracking', false)}
                 <div class="relative w-full h-[calc(100vh-220px)] -mx-6 mb-4">
                     <!-- Simulated Map View -->
                     <div class="map-bg w-full h-full">
-                        <div class="absolute top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg text-lg z-30 flex items-center">
-                            <i data-lucide="timer" class="w-5 h-5 mr-2"></i>
-                            <span id="ride-timer">${isRideComplete ? '00:00' : timerDisplay}</span>
+                        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-${isRideComplete ? 'emerald' : 'red'}-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg text-lg z-30">
+                            ${isRideComplete ? 'Ride Completed!' : 'Driver ETA: ' + appState.rideDetails.estimatedTime}
                         </div>
                         
                         <!-- Driver ETA to Pickup Location -->
@@ -1319,7 +1186,7 @@
                 <!-- Action Buttons -->
                 <div class="space-y-3 pb-8">
                     ${!isRideComplete 
-                        ? `<button onclick="stopRideTimer(); appState.activeRideInProgress = false; showModal('Ride Canceled', 'Your ride has been safely canceled. You can book a new one from the home screen.'); navigate(SCREENS.HOME);" class="w-full border-2 border-red-500 text-red-500 py-3 rounded-xl font-semibold text-lg hover:bg-red-50 transition">
+                        ? `<button onclick="appState.activeRideInProgress = false; showModal('Ride Canceled', 'Your ride has been safely canceled. You can book a new one from the home screen.'); navigate(SCREENS.HOME);" class="w-full border-2 border-red-500 text-red-500 py-3 rounded-xl font-semibold text-lg hover:bg-red-50 transition">
                             Cancel Ride
                         </button>
                         <button onclick="navigate('${SCREENS.EMERGENCY}')" class="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-lg shadow-lg shadow-red-200 hover:bg-red-700 transition">
@@ -1431,16 +1298,22 @@
         }
 
         function renderEmergencyScreen() {
-            const { emergencyContact, manualEmergencyContact } = appState.user;
-            const hasManual = !!manualEmergencyContact;
-            const location = { lat: '19.0760', lon: '72.8777' }; // Simulated for display
-            const googleMapsLink = `https://maps.google.com/maps?q=${location.lat},${location.lon}`;
+             const familyContact = appState.user.emergencyContact;
+            const manualContact = appState.user.manualEmergencyContact;
+            const hasManual = !!manualContact;
 
             $mainContent.innerHTML = `
                 ${renderHeader('Emergency', true)}
-                <div class="py-4 space-y-6 text-center">
+                <div class="py-4 space-y-6">
                     
-                    <!-- Main SOS Button -->
+                    <!-- Code Red Status Banner -->
+                    <div class="flex flex-col items-center bg-red-800 p-8 rounded-3xl border-4 border-red-500 shadow-xl">
+                        <i data-lucide="alert-octagon" class="w-16 h-16 text-yellow-300 mb-3 animate-pulse"></i>
+                        <h3 class="text-3xl font-extrabold text-white tracking-wider">CODE RED ALERT</h3>
+                        <p class="text-center text-sm text-red-200 mt-2">Immediate location and ride details are prepped for dispatch.</p>
+                    </div>
+
+                    <!-- Main SOS Button (Enhanced with CSS radial glow) -->
                     <div class="p-4 bg-white rounded-2xl card-shadow">
                         <button onclick="triggerEmergency('SOS')" class="sos-button w-full bg-red-600 text-white py-5 rounded-2xl font-extrabold text-3xl shadow-2xl shadow-red-400 hover:bg-red-700 transition transform active:scale-[0.98]">
                             <span class="relative z-20 flex items-center justify-center">
@@ -1450,52 +1323,72 @@
                         </button>
                     </div>
 
-                    <!-- NEW: Shared Location Info -->
-                    <div class="bg-white p-4 rounded-2xl card-shadow border border-blue-200">
-                        <h3 class="text-md font-bold text-gray-800 flex items-center justify-center">
-                           <i data-lucide="map-pin" class="w-5 h-5 mr-2 text-blue-600"></i>
-                           Your Location to be Shared
-                        </h3>
-                        <p class="text-xs text-gray-500 mt-1 mb-3">This info will be sent to emergency contacts.</p>
-                        <div class="relative w-full h-24 rounded-lg overflow-hidden border">
-                             <div class="map-bg w-full h-full opacity-50"></div>
-                             <div class="absolute inset-0 flex items-center justify-center">
-                                 <i data-lucide="crosshair" class="w-8 h-8 text-blue-700 animate-pulse"></i>
-                             </div>
+                    <!-- Personal Contacts -->
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Personal Contacts</h3>
+                    <div class="bg-white rounded-2xl card-shadow divide-y divide-gray-100 mb-4">
+                        
+                        <!-- Default Contact -->
+                        <div class="flex items-center justify-between p-4 transition hover:bg-gray-50 cursor-pointer" onclick="triggerEmergency('Family')">
+                             <div class="flex items-center">
+                                <div class="p-3 bg-red-100 rounded-full mr-3">
+                                    <i data-lucide="users" class="w-6 h-6 text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-extrabold text-red-800 text-lg">${familyContact.name}</p>
+                                    <p class="text-xs text-gray-500">Primary Contact Alert</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-md font-bold text-red-600">${familyContact.phone}</p>
+                            </div>
                         </div>
-                        <p class="text-sm font-mono text-gray-600 mt-2">${location.lat}, ${location.lon}</p>
-                        <a href="${googleMapsLink}" target="_blank" class="text-xs text-blue-600 hover:underline">View on Google Maps</a>
+                        
+                        <!-- Manual Contact or Add Button -->
+                        <div class="flex items-center justify-between p-4 transition hover:bg-gray-50 cursor-pointer" onclick="document.getElementById('contact-modal').classList.remove('hidden')">
+                            <div class="flex items-center">
+                                <div class="p-3 ${hasManual ? 'bg-emerald-100' : 'bg-gray-100'} rounded-full mr-3">
+                                    <i data-lucide="phone-call" class="w-6 h-6 ${hasManual ? 'text-emerald-600' : 'text-gray-600'}"></i>
+                                </div>
+                                <div>
+                                    <p class="font-extrabold text-gray-800 text-lg">${hasManual ? 'Manual Contact' : 'Add Custom Contact'}</p>
+                                    <p class="text-xs ${hasManual ? 'text-emerald-500' : 'text-gray-500'}">${hasManual ? manualContact : 'Tap to add another alert number.'}</p>
+                                </div>
+                            </div>
+                            <i data-lucide="edit" class="w-5 h-5 text-gray-400"></i>
+                        </div>
                     </div>
 
 
-                    <!-- Contacts Grid -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <!-- Police -->
-                         <div onclick="triggerEmergency('Police')" class="bg-red-50 p-4 rounded-xl text-center cursor-pointer hover:bg-red-100 transition border border-red-200">
-                            <i data-lucide="shield-alert" class="w-8 h-8 mx-auto text-red-600 mb-1"></i>
-                            <p class="font-bold text-red-800">Police</p>
-                            <p class="text-xs text-gray-600">Dial 100</p>
-                        </div>
-                        
-                        <!-- Ambulance -->
-                         <div onclick="triggerEmergency('Hospital')" class="bg-red-50 p-4 rounded-xl text-center cursor-pointer hover:bg-red-100 transition border border-red-200">
-                            <i data-lucide="ambulance" class="w-8 h-8 mx-auto text-red-600 mb-1"></i>
-                            <p class="font-bold text-red-800">Ambulance</p>
-                            <p class="text-xs text-gray-600">Dial 108</p>
-                        </div>
+                    <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Emergency Services</h3>
 
-                        <!-- Family Contact -->
-                         <div onclick="triggerEmergency('Family')" class="bg-blue-50 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-100 transition border border-blue-200">
-                            <i data-lucide="users" class="w-8 h-8 mx-auto text-blue-600 mb-1"></i>
-                            <p class="font-bold text-blue-800">${emergencyContact.name}</p>
-                            <p class="text-xs text-gray-600">Primary Contact</p>
+                    <div class="bg-white rounded-2xl card-shadow divide-y divide-gray-100">
+                         <div class="flex items-center justify-between p-4 transition hover:bg-gray-50 cursor-pointer" onclick="triggerEmergency('Police')">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-red-100 rounded-full mr-3">
+                                    <i data-lucide="User" class="w-6 h-6 text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-extrabold text-red-800 text-lg">Police</p>
+                                    <p class="text-xs text-gray-500">Call Police Service (India)</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-md font-bold text-red-600">100</p>
+                            </div>
                         </div>
-
-                        <!-- Manual Contact -->
-                        <div onclick="document.getElementById('contact-modal').classList.remove('hidden')" class="bg-gray-100 p-4 rounded-xl text-center cursor-pointer hover:bg-gray-200 transition border border-gray-200">
-                             <i data-lucide="${hasManual ? 'phone-call' : 'plus-circle'}" class="w-8 h-8 mx-auto text-gray-600 mb-1"></i>
-                            <p class="font-bold text-gray-800">${hasManual ? 'Manual Contact' : 'Add Contact'}</p>
-                            <p class="text-xs text-gray-600">${hasManual ? manualEmergencyContact : 'Tap to add'}</p>
+                        <div class="flex items-center justify-between p-4 transition hover:bg-gray-50 cursor-pointer" onclick="triggerEmergency('Hospital')">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-red-100 rounded-full mr-3">
+                                    <i data-lucide="Hospital" class="w-6 h-6 text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-extrabold text-red-800 text-lg">Ambulance</p>
+                                    <p class="text-xs text-gray-500">Call Medical Service (India)</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-md font-bold text-red-600">108</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1568,9 +1461,6 @@
                                     <p class="text-xs text-gray-500 ml-6">
                                         ${ride.date} | ${ride.rideType} | ${appState.currency}${ride.fare.toFixed(0)}
                                     </p>
-                                    <div class="flex items-center text-xs mt-1 ml-6">
-                                        ${[...Array(5)].map((_, i) => `<i data-lucide="star" class="w-3 h-3 ${i < (ride.feedback?.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}"></i>`).join('')}
-                                    </div>
                                     ${ride.needsWheelchair ? `
                                     <div class="flex items-center text-xs text-blue-600 font-semibold mt-1 ml-6 bg-blue-100 px-2 py-0.5 rounded-full w-fit">
                                        <i data-lucide="wheelchair" class="w-3 h-3 mr-1"></i>
@@ -1630,14 +1520,6 @@
                         <i data-lucide="indian-rupee" class="w-5 h-5 text-gray-500 mr-3"></i>
                         <p class="text-gray-700"><span class="font-semibold">Final Fare:</span> ${appState.currency}${ride.fare.toFixed(0)}</p>
                     </div>
-                    <!-- NEW: Display Feedback -->
-                     <div class="flex items-start">
-                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 mr-3 mt-1"></i>
-                        <div>
-                            <p class="text-gray-700"><span class="font-semibold">Your Rating:</span> ${ride.feedback.rating} out of 5</p>
-                            ${ride.feedback.suggestion ? `<p class="text-xs italic text-gray-500 mt-1">"${ride.feedback.suggestion}"</p>` : ''}
-                        </div>
-                    </div>
                      ${ride.needsWheelchair ? `
                         <div class="flex items-center bg-blue-100 p-2 rounded-lg">
                            <i data-lucide="wheelchair" class="w-5 h-5 text-blue-600 mr-3"></i>
@@ -1670,102 +1552,9 @@
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const imageUrl = e.target.result;
-                    appState.user.avatar = imageUrl;
-                    document.getElementById('profile-avatar').src = imageUrl;
-                    showToast('Profile picture updated!', 'success');
-                };
-                reader.readAsDataURL(file);
+                appState.user.avatar = URL.createObjectURL(file);
+                navigate(SCREENS.PROFILE); 
             }
-        }
-
-        // --- NEW Ride Timer & AI Message Functions ---
-        
-        function startRide() {
-            appState.activeRideInProgress = true;
-            appState.rideDetails.rideTimerSeconds = 600; // 10 minutes
-            
-            if (appState.rideDetails.timerInterval) clearInterval(appState.rideDetails.timerInterval);
-
-            appState.rideDetails.timerInterval = setInterval(() => {
-                const timerEl = document.getElementById('ride-timer');
-                if (appState.rideDetails.rideTimerSeconds > 0) {
-                    appState.rideDetails.rideTimerSeconds--;
-                    if (timerEl) {
-                        const minutes = Math.floor(appState.rideDetails.rideTimerSeconds / 60);
-                        const seconds = appState.rideDetails.rideTimerSeconds % 60;
-                        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    }
-                } else {
-                    stopRideTimer();
-                    if(timerEl) timerEl.textContent = "00:00";
-                }
-            }, 1000);
-
-            navigate(SCREENS.LIVE_TRACKING);
-            setTimeout(showProactiveAiMessage, 7000); // Proactive message after 7 seconds
-        }
-
-        function stopRideTimer() {
-             if (appState.rideDetails.timerInterval) {
-                clearInterval(appState.rideDetails.timerInterval);
-                appState.rideDetails.timerInterval = null;
-            }
-        }
-        
-        function showProactiveAiMessage() {
-            if (!appState.activeRideInProgress) return;
-            const messages = [
-                "AI: Heavy traffic on MG Road. Suggesting detour via Park Street to save 4 minutes. Driver has been notified.",
-                "AI: Weather ahead looks clear. Your ETA remains unchanged.",
-                "AI: A faster route is available due to easing congestion. Your new ETA is 2 minutes earlier."
-            ];
-            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-            showToast(randomMsg, 'location');
-        }
-
-        // --- NEW Feedback Modal Functions ---
-        let currentRating = 0;
-        
-        function renderFeedbackStars() {
-            const container = document.getElementById('feedback-stars');
-            container.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const star = document.createElement('i');
-                star.dataset.lucide = 'star';
-                star.className = `w-10 h-10 feedback-star ${i <= currentRating ? 'selected' : ''}`;
-                star.onclick = () => setRating(i);
-                container.appendChild(star);
-            }
-            lucide.createIcons();
-        }
-
-        function setRating(rating) {
-            currentRating = rating;
-            renderFeedbackStars();
-        }
-
-        function showFeedbackModal() {
-            currentRating = 0;
-            document.getElementById('feedback-suggestion').value = '';
-            renderFeedbackStars();
-            document.getElementById('feedback-modal').classList.remove('hidden');
-        }
-
-        function submitFeedback() {
-            const latestRide = appState.rideHistory[0];
-            if (latestRide) {
-                latestRide.feedback = {
-                    rating: currentRating,
-                    suggestion: document.getElementById('feedback-suggestion').value.trim()
-                };
-            }
-            document.getElementById('feedback-modal').classList.add('hidden');
-            stopRideTimer();
-            appState.activeRideInProgress = false;
-            navigate(SCREENS.LIVE_TRACKING); // Navigate to completed screen
         }
 
         // --- Navigation & Control Flow ---
@@ -1835,7 +1624,6 @@
         }
 
         async function triggerEmergency(target) {
-            playSosSound(); // Play beep sound on click
             toggleLoading(true, 'Activating emergency protocol...');
             let location = { lat: 'Unknown', lon: 'Unknown', accuracy: 'N/A' };
             let locationMsg = 'Location data unavailable. Sharing approximate location.';
@@ -1913,9 +1701,6 @@
                     break;
                 case SCREENS.PROFILE:
                     renderProfileScreen();
-                    break;
-                case SCREENS.AI_SUPPORT:
-                    renderAiSupportScreen();
                     break;
                 case SCREENS.LOGIN:
                 default:
